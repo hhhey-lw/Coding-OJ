@@ -22,20 +22,20 @@
 
 **首页**
 
-![image-20250608220254725](codingoj-frontend/resource/img-1.png)
+![image-20250608220254725](coding-oj-frontend/resource/img-1.png)
 
 **题库**
 
-![image-20250608220254725](codingoj-frontend/resource/img-2.png)
+![image-20250608220254725](coding-oj-frontend/resource/img-2.png)
 
 **评测**
 
-![image-20250608220254725](codingoj-frontend/resource/img-3.png)
+![image-20250608220254725](coding-oj-frontend/resource/img-3.png)
 
 **题目详情**
 
-![image-20250608220254725](codingoj-frontend/resource/img-4.png)
+![image-20250608220254725](coding-oj-frontend/resource/img-4.png)
 
 **讨论**
 
-![image-20250608220254725](codingoj-frontend/resource/img-5.png)
+![image-20250608220254725](coding-oj-frontend/resource/img-5.png)
