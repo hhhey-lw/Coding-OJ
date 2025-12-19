@@ -140,7 +140,6 @@ const doMenuClick = (key: string) => {
 const logout = () => {
   store.dispatch("user/logout");
   store.commit("user/clearToken");
-  localStorage.removeItem('chatHistory');
   router.push({
     path: "/questions",
   });

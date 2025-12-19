@@ -14,11 +14,9 @@ import ViewDiscussion from "@/views/discussion/ListDiscussionView.vue";
 import DetailDiscussion from "@/views/discussion/DetailDiscussionView.vue";
 import UserInfoView from "@/views/user/UserInfoView.vue";
 import AddDicussionView from "@/views/discussion/AddDicussionView.vue";
-import {IconComputer, IconHome, IconList, IconPalette, IconSettings, IconVoice} from "@arco-design/web-vue/es/icon";
+import {IconComputer, IconHome, IconList, IconPalette, IconSettings} from "@arco-design/web-vue/es/icon";
 import TagQuestionListView from "@/views/question/TagQuestionListView.vue";
 import ManagerCenterView from "@/views/user/ManagerCenterView.vue";
-import InterviewSimulateView from "@/views/chat/InterviewSimulateView.vue";
-import FillResumeInfoView from "@/views/chat/FillResumeInfoView.vue";
 
 export const routes: Array<RouteRecordRaw> = [
   {
@@ -153,20 +151,5 @@ export const routes: Array<RouteRecordRaw> = [
       hideInMenu: true,
       access: ACCESS_ENUM.USER,
     }
-  },{
-    path: "/interview",
-    name: "面试",
-    component: FillResumeInfoView,
-    meta: {
-      hideInMenu: false,
-      icon: IconVoice,
-    }
-  }, {
-    path: "/interview/simulate",
-    name: "面试模拟",
-    component: InterviewSimulateView,
-    meta: {
-      hideInMenu: true,
-    }
-  }
+}
 ];
