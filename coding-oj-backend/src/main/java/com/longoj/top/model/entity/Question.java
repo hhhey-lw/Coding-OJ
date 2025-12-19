@@ -1,5 +1,6 @@
 package com.longoj.top.model.entity;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -99,6 +100,7 @@ public class Question implements Serializable {
      */
     private Integer isDelete;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override

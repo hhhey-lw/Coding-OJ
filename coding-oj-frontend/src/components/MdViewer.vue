@@ -21,10 +21,10 @@ import "highlight.js/styles/default.css";
 // import theme from "bytemd-plugin-theme";
 // 代码高亮
 // import highLightPlugin from "bytemd-plugin-highlight";
-// 代码复制
-import copyCode from "bytemd-plugin-copy-code";
-import "bytemd-plugin-copy-code/dist/style/index.css";
-import 'juejin-markdown-themes/dist/juejin.min.css'
+// 代码复制 - 已移除，使用内置高亮即可
+// import copyCode from "bytemd-plugin-copy-code";
+// import "bytemd-plugin-copy-code/dist/style/index.css";
+// import 'juejin-markdown-themes/dist/juejin.min.css'
 import { withDefaults, defineProps } from "vue";
 
 interface Props {
@@ -44,13 +44,13 @@ const plugins = [
   // theme(),
   // highLightPlugin(),
   // imagePlugin(),
-  copyCode({
-    copySuccess: (text) => {
-      console.log("复制成功");
-    },
-    copyError: (err) => {},
-    copyRight: "",
-  }),
+  // copyCode({
+  //   copySuccess: (text) => {
+  //     console.log("复制成功");
+  //   },
+  //   copyError: (err) => {},
+  //   copyRight: "",
+  // }),
 ];
 
 const props = withDefaults(defineProps<Props>(), {

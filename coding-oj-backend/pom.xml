@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.longcoding</groupId>
-    <artifactId>longcoding-oj</artifactId>
+    <artifactId>Coding-OJ</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>long coding-oj</name>
+    <name>coding-oj</name>
 
     <properties>
         <java.version>17</java.version>

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -39,7 +41,14 @@ public class Post implements Serializable {
      */
     private String tags;
 
+    /**
+     * 评论数量
+     */
     private Integer commentNum;
+
+    /**
+     * 浏览数
+     */
     private Integer pageView;
 
     /**
@@ -73,6 +82,7 @@ public class Post implements Serializable {
     @TableLogic
     private Integer isDelete;
 
+    @Serial
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

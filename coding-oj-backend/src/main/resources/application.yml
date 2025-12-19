@@ -1,0 +1,60 @@
+# 公共配置文件
+server:
+  port: 8101
+  servlet:
+    context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: Coding-OJ
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  session:
+    # 30 天过期
+    timeout: 2592000
+  # 文件上传
+  servlet:
+    multipart:
+      # 大小限制
+      max-file-size: 10MB
+  web:
+    resources:
+      static-locations: classpath:/static, classpath:/static/images
+
+mybatis-plus:
+  configuration:
+    # 下划线转驼峰
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 全局逻辑删除的实体字段名
+      logic-delete-field: isDelete
+      # 逻辑已删除值（默认为 1）
+      logic-delete-value: 1
+      # 逻辑未删除值（默认为 0）
+      logic-not-delete-value: 0
+
+# 接口文档配置
+knife4j:
+  enable: true
+  openapi:
+    title: "接口文档"
+    version: 1.0
+    group:
+      default:
+        api-rule: package
+        api-rule-resources:
+          - com.longoj.top.controller
+
+jwt:
+  secret: ${JWT_SECRET:Coding-OJ}
+  expiration: ${JWT_EXPIRATION:604800}
+  token-header: "Authorization"

@@ -259,7 +259,7 @@ public class JavaDockerCodeSandBox implements CodeSandBox {
                 "~/.ssh/id_rsa",     // SSH私钥
                 "web.config",        // Web服务器配置
                 "application.properties",
-                ".env",              // 环境变量文件
+                "application.properties",              // 环境变量文件
                 "keyStore.jks",      // Java密钥库
                 "wp-config.php"      // WordPress配置
         };

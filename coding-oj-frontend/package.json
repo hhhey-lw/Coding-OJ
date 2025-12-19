@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev": "vue-cli-service serve",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@arco-design/web-vue": "^2.49.1",
     "@bytemd/plugin-frontmatter": "^1.22.0",
     "@bytemd/plugin-gemoji": "^1.22.0",
     "@bytemd/plugin-gfm": "^1.22.0",
@@ -15,26 +17,20 @@
     "@bytemd/plugin-medium-zoom": "^1.22.0",
     "@bytemd/plugin-mermaid": "^1.22.0",
     "@bytemd/vue-next": "^1.22.0",
-    "@tdesign-vue-next/chat": "^0.4.0",
     "axios": "^1.4.0",
     "bytemd": "^1.22.0",
     "bytemd-plugin-copy-code": "^1.0.0",
-    "bytemd-plugin-highlight": "^1.0.0",
-    "bytemd-plugin-image": "^1.0.0",
-    "bytemd-plugin-theme": "^1.0.2",
+    "juejin-markdown-themes": "^1.0.0",
     "core-js": "^3.8.3",
     "moment": "^2.29.4",
     "monaco-editor": "^0.41.0",
-    "monaco-editor-webpack-plugin": "^7.1.0",
-    "tdesign-vue-next": "^1.13.2",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3",
-    "vuex": "^4.0.0",
-    "yarn": "^1.22.22"
+    "vuex": "^4.0.0"
   },
   "devDependencies": {
-    "@arco-design/web-vue": "^2.49.1",
     "@babel/plugin-transform-private-methods": "^7.27.1",
+    "monaco-editor-webpack-plugin": "^7.1.0",
     "@openapitools/openapi-generator-cli": "^2.20.2",
     "@types/node": "16.18.0",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
