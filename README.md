@@ -15,11 +15,6 @@
 - [x] 消费失败 => 死信队列 => 修正消息表状态
 - [x] 题目根据标签搜索
 - [x] 优化前端界面
-- [x] AI八股面试官⭐⭐⭐
-  - [x] 语音问答
-  - [x] 基于简历提问
-  - [ ] 重写大模型对话存储 - 保存对话数据到MySQL和Redis
-  - [ ] 面试结束综合评价 - 基于大模型整理面试者的回答
 
 
 
@@ -44,9 +39,3 @@
 **讨论**
 
 ![image-20250608220254725](codingoj-frontend/resource/img-5.png)
-
-**面试**
-
-![image-20250608220254725](codingoj-frontend/resource/img-6.png)
-
-![image-20250608220254725](codingoj-frontend/resource/img-7.png)
