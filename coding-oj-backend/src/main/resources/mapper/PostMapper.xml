@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.PostMapper">
+<mapper namespace="com.longoj.top.infrastructure.mapper.PostMapper">
 
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.Post">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.Post">
         <id property="id" column="id" jdbcType="BIGINT"/>
         <result property="title" column="title" jdbcType="VARCHAR"/>
         <result property="content" column="content" jdbcType="VARCHAR"/>
@@ -23,7 +23,7 @@
         create_time,update_time,is_delete
     </sql>
 
-    <select id="listPostWithDelete" resultType="com.longoj.top.model.entity.Post">
+    <select id="listPostWithDelete" resultType="com.longoj.top.domain.entity.Post">
         select *
         from post
         where update_time >= #{minUpdateTime}

@@ -87,7 +87,7 @@ import {
   IconDoubleLeft,
   IconDoubleRight
 } from '@arco-design/web-vue/es/icon'
-import {UserCheckInControllerService, type UserSubmitSummaryVO} from "../../../generated";
+import {getUserCheckIn} from "@/api/user";
 // import { useStore } from 'vuex';
 import store from "@/store";
 
@@ -165,18 +165,22 @@ const fetchData = async () => {
   const year = currentYear.value
   const month = String(currentMonth.value).padStart(2, '0')
 
-  const res = await UserCheckInControllerService.getUserCheckInByUserIdAndYearMonthUsingGet(
+  // const res = await UserCheckInControllerService.getUserCheckInByUserIdAndYearMonthUsingGet(
+  //     store.state.user.loginUser.id,
+  //     `${year}-${month}`
+  // )
+  const res:any = await getUserCheckIn(
       store.state.user.loginUser.id,
       `${year}-${month}`
-  )
+  );
 
-  if (res.data != null && res.data.bitmap != null){
-    bitmap.value = res.data.bitmap;
-    totalSubmissions.value = res.data.userSubmitSummaryVO.reduce((a, b) => a + b.submitCount, 0);
-    acceptedSubmissions.value = res.data.userSubmitSummaryVO.reduce((a, b) => a + b.acceptCount, 0);
+  if (res && res.bitmap != null){
+    bitmap.value = res.bitmap;
+    totalSubmissions.value = res.userSubmitSummaryVO.reduce((a:number, b:any) => a + b.submitCount, 0);
+    acceptedSubmissions.value = res.userSubmitSummaryVO.reduce((a:number, b:any) => a + b.acceptCount, 0);
 
     // 生成一个月的提交信息
-    generateLastMonthDays(res.data.userSubmitSummaryVO);
+    generateLastMonthDays(res.userSubmitSummaryVO);
   }
   else {
     bitmap.value = 0;

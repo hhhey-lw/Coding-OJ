@@ -110,7 +110,7 @@
 
 <script setup lang="ts">
 import {ref, computed, onMounted} from 'vue'
-import {PostControllerService, PostQueryRequest, PostVO} from "../../../generated";
+import {listPostVOByPage, PostQueryRequest, PostVO} from "@/api/discussion";
 import { useRouter } from "vue-router";
 import {
   IconThumbUpFill
@@ -155,7 +155,7 @@ onMounted(() => {
 const loadPostData = async () => {
   try {
     console.log("加载数据中...")
-    const res = await PostControllerService.listPostVoByPageUsingPost({
+    const res:any = await listPostVOByPage({
       current: queryParams.value.current,
       pageSize: queryParams.value.pageSize,
       sortField: queryParams.value.sortField,
@@ -163,9 +163,9 @@ const loadPostData = async () => {
       searchText: queryParams.value.searchText
     });
     console.log(res)
-    if (res.code === 0 && res.data?.records) {
-      postList.value = res.data.records; // 使用.value更新响应式数据
-      queryParams.value.total = res.data.total;
+    if (res && res.records) {
+      postList.value = res.records; // 使用.value更新响应式数据
+      queryParams.value.total = res.total;
     }
   } catch (error) {
     console.error('加载数据失败:', error);

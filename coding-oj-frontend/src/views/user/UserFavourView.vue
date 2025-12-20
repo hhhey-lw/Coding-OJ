@@ -81,7 +81,7 @@
 <script setup lang="ts">
 import {IconThumbUpFill} from "@arco-design/web-vue/es/icon";
 import {computed, onMounted, ref} from "vue";
-import {PostControllerService, PostFavourControllerService, PostQueryRequest, PostVO} from "../../../generated";
+import {listMyFavourPostByPage, PostQueryRequest, PostVO} from "@/api/discussion";
 import { useRouter } from "vue-router";
 // =====> 变量定义 <=====
 const router = useRouter();
@@ -109,14 +109,14 @@ let queryParams = ref<PostQueryRequest>({
 const loadPostData = async () => {
   try {
     console.log("加载数据中...")
-    const res = await PostFavourControllerService.listMyFavourPostByPageUsingPost({
+    const res:any = await listMyFavourPostByPage({
       current: queryParams.value.current,
       pageSize: queryParams.value.pageSize,
     });
     console.log(res)
-    if (res.code === 0 && res.data?.records) {
-      postList.value = res.data.records; // 使用.value更新响应式数据
-      queryParams.value.total = res.data.total;
+    if (res && res.records) {
+      postList.value = res.records; // 使用.value更新响应式数据
+      queryParams.value.total = res.total;
     }
   } catch (error) {
     console.error('加载数据失败:', error);

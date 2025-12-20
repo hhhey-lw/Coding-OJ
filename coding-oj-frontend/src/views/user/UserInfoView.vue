@@ -107,9 +107,12 @@ import {
   IconUpload
 } from '@arco-design/web-vue/es/icon';
 import {
-  FileControllerService,
-  UserControllerService,
-} from "../../../generated";
+  uploadFile
+} from "@/api/file";
+import {
+  updateMyUser,
+  updateUserPwd
+} from "@/api/user";
 import UserCheckInView from "@/views/user/UserCheckInView.vue";
 import {Message} from "@arco-design/web-vue";
 import store from "@/store";
@@ -175,31 +178,31 @@ const uploadAndUpdateUser = async () => {
 
     if (userInfo.value.avatarFile) {
 
-      const uploadRes = await FileControllerService.uploadFileUsingPost(
+      const uploadRes:any = await uploadFile(
           userInfo.value.avatarFile,
           'user_avatar'
       );
 
-      if (uploadRes.code !== 0) {
-        throw new Error(uploadRes.message || '头像上传失败');
+      if (!uploadRes) {
+        throw new Error('头像上传失败');
       }
-      avatarUrl = uploadRes.data;
+      avatarUrl = uploadRes;
     }
 
     // 更新用户信息
-    const updateRes = await UserControllerService.updateMyUserUsingPost({
+    const updateRes:any = await updateMyUser({
       ...userInfo.value,
       userAvatar: avatarUrl
     });
 
-    if (updateRes.code === 0) {
+    if (updateRes) {
       Message.success('个人信息更新成功！');
       // 正确重置文件输入
       if (fileInput.value) fileInput.value = '';
       userInfo.value.avatarFile = null;
       window.location.reload();
     } else {
-      throw new Error(updateRes.message || '用户信息更新失败');
+      throw new Error('用户信息更新失败');
     }
   } catch (error) {
     console.error('操作失败:', error);
@@ -222,12 +225,12 @@ const changePassword = async () => {
   }
   console.log('修改密码:', securityInfo.value);
   // 这里可以添加API调用修改密码
-  let res = await UserControllerService.updateUserPwdUsingPost({
+  let res:any = await updateUserPwd({
     newPwd: securityInfo.value.newPassword,
     oldPwd: securityInfo.value.currentPassword
   });
 
-  if (res.code === 0 && res.data == true) {
+  if (res) {
     alert("更新成功！")
     await store.dispatch("user/logout");
     // router.push({

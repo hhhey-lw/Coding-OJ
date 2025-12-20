@@ -48,9 +48,7 @@
 
 <script setup lang="ts">
 import { reactive } from "vue";
-// import API from "@/api";
-import { UserControllerService } from "../../../generated";
-// import { userRegisterUsingPost } from "@/api/userController";
+import { userRegister, UserRegisterRequest } from "@/api/user";
 import message from "@arco-design/web-vue/es/message";
 import { useRouter } from "vue-router";
 
@@ -60,21 +58,21 @@ const form = reactive({
   userAccount: "",
   userPassword: "",
   checkPassword: "",
-} as API.UserRegisterRequest);
+} as UserRegisterRequest);
 
 /**
  * 提交
  */
 const handleSubmit = async () => {
-  const res = await UserControllerService.userRegisterUsingPost(form);
-  if (res.code == 0) {
+  const res:any = await userRegister(form);
+  if (res) {
     message.success("注册成功");
     router.push({
       path: "/user/login",
       replace: true,
     });
   } else {
-    message.error("注册失败，" + res.message);
+    message.error("注册失败");
   }
 };
 

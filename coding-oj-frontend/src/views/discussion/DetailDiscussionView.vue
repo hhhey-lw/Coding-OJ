@@ -24,10 +24,10 @@
           <span class="post-time">{{formatUtcDateTime(postVO?.createTime)}}</span>
         </a-space>
         <a-space>
-          <IconThumbUpFill style="font-size: large" v-if="postVO?.hasThumb" @click="thumbPost"/>
-          <IconThumbUp style="font-size: large" v-else @click="thumbPost"/>
-          <IconStarFill style="font-size: large" v-if="postVO?.hasFavour" @click="favourPost"/>
-          <IconStar style="font-size: large" v-else @click="favourPost"/>
+          <IconThumbUpFill style="font-size: large; color: #165dff; cursor: pointer;" v-if="postVO?.hasThumb" @click="thumbPost"/>
+          <IconThumbUp style="font-size: large; cursor: pointer;" v-else @click="thumbPost"/>
+          <IconStarFill style="font-size: large; color: #ffb400; cursor: pointer;" v-if="postVO?.hasFavour" @click="favourPost"/>
+          <IconStar style="font-size: large; cursor: pointer;" v-else @click="favourPost"/>
 <!--          <a-link icon><icon-share-alt /> 分享</a-link>-->
         </a-space>
       </a-space>
@@ -65,12 +65,12 @@
           <a-divider/>
           <template #actions>
             <span class="action" style="cursor: pointer" key="reply" @click="toggleReplyInput(item.commentId)">
-          <IconMessage /> {{replyStates[item.commentId]? '取消回复' :'回复'}}
+          <IconMessage /> {{activeReplyId === item.commentId ? '取消回复' :'回复'}}
         </span>
           </template>
 
           <!-- 主评论的回复输入框 -->
-          <div v-if="replyStates[item.commentId]" class="reply-input-container">
+          <div v-if="activeReplyId === item.commentId" class="reply-input-container">
             <a-input
                 v-model="replyContents[item.commentId]"
                 placeholder="写下你的回复..."
@@ -104,12 +104,12 @@
 <!--            {{ 83 }}-->
 <!--          </span>-->
               <span class="action" key="reply" @click="toggleReplyInput(subitem.commentId)">
-            <IconMessage /> {{replyStates[subitem.commentId] ? '取消回复' : '回复'}}
+            <IconMessage /> {{activeReplyId === subitem.commentId ? '取消回复' : '回复'}}
           </span>
             </template>
 
             <!-- 子评论的回复输入框 -->
-            <div v-if="replyStates[subitem.commentId]" class="reply-input-container">
+            <div v-if="activeReplyId === subitem.commentId" class="reply-input-container">
               <a-input
                   v-model="replyContents[subitem.commentId]"
                   placeholder="写下你的回复..."
@@ -142,12 +142,14 @@
 import {ref, onMounted, UnwrapRef} from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  CommentControllerService,
-  CommentPageQueryRequest,
-  PostControllerService,
+  listCommentVOByPage,
+  getPostVOById,
+  postThumb,
+  postFavour,
+  addComment,
   PostVO,
-  CommentVO, CommentAddRequest, PostThumbControllerService, PostFavourControllerService,
-} from "../../../generated";
+  CommentVO, CommentAddRequest, CommentQueryRequest
+} from "@/api/discussion";
 import message from "@arco-design/web-vue/es/message";
 import MdViewer from "@/components/MdViewer.vue";
 import {
@@ -186,8 +188,8 @@ const tagColor = [
 ]
 
 // 响应式状态
-const replyStates = ref<Record<number, boolean>>({});
-const replyContents = ref<Record<number, string>>({});
+const activeReplyId = ref<number | string | null>(null); // 当前激活的回复框 ID
+const replyContents = ref<Record<number | string, string>>({});
 
 // 直接回复Post的评论内容
 const newComment = ref('');
@@ -201,32 +203,32 @@ onMounted(() => {
 
 // =====> 函数定义 <=====
 const loadPostData = async () => {
-  const res = await PostControllerService.getPostVoByIdUsingGet(
+  const res:any = await getPostVOById(
       props.id
   );
-  if (res.code === 0) {
-    console.log('res.data',res.data);
-    postVO.value = res.data;
+  if (res) {
+    console.log('res.data',res);
+    postVO.value = res;
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 };
 
 const loadCommentData = async () => {
-  const req:CommentPageQueryRequest = {
+  const req:CommentQueryRequest = {
     postId: props.id,
     pageSize: pageInfo.value.pageSize,
     current: pageInfo.value.current
   }
-  const res = await CommentControllerService.listCommentVoByPageUsingPost(
+  const res:any = await listCommentVOByPage(
       req
   );
-  if (res.code === 0) {
-    console.log('res.data',res.data);
-    pageInfo.value.totalComments = res.data.total
-    commentList.value = res.data.records;
+  if (res) {
+    console.log('res.data',res);
+    pageInfo.value.totalComments = res.total
+    commentList.value = res.records;
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 };
 
@@ -240,17 +242,17 @@ const submitComment = async () => {
   const commentAddReq:CommentAddRequest = {
     content: newComment.value,
     postId: postVO.value?.id,
-    status: 0,
-    userId: store.state.user.loginUser.id
+    // status: 0,
+    // userId: store.state.user.loginUser.id
   }
-  const res = await CommentControllerService.addCommentUsingPost(commentAddReq);
+  const res:any = await addComment(commentAddReq);
   console.log("评论插入Res", res)
-  if (res.code == 0) {
+  if (res) {
     alert("评论成功！");
     newComment.value = "";
-    commentList.value.push(res.data)
+    commentList.value.push(res)
   }else {
-    alert("评论失败", res.message)
+    alert("评论失败")
   }
 }
 
@@ -301,11 +303,11 @@ function findParentUserName(parentId: number | undefined, list: CommentVO[]): st
 
 const thumbPost = async () => {
   console.log("点赞！");
-  let res = await PostThumbControllerService.doThumbUsingPost({
+  let res:any = await postThumb({
     postId: postVO.value.id
   });
   console.log("res");
-  if (res.code === 0) {
+  if (res) {
     postVO.value.hasThumb = !postVO.value.hasThumb
   }else {
     alert("点赞失败！");
@@ -314,41 +316,38 @@ const thumbPost = async () => {
 
 const favourPost = async () => {
   console.log("收藏！");
-  let res = await PostFavourControllerService.doPostFavourUsingPost({
+  let res:any = await postFavour({
     postId: postVO.value.id
   });
   console.log("res");
-  if (res.code === 0) {
+  if (res) {
     postVO.value.hasFavour = !postVO.value.hasFavour
   }else {
     alert("收藏失败！");
   }
 }
 
-// 切换回复输入框显示/隐藏
-const toggleReplyInput = (commentId: number) => {
-  replyStates.value = {
-    ...replyStates.value,
-    [commentId]: !replyStates.value[commentId]
-  };
-
-  // 初始化或清空内容
-  if (!replyContents.value[commentId]) {
-    replyContents.value = {
-      ...replyContents.value,
-      [commentId]: ''
-    };
-  } else if (!replyStates.value[commentId]) {
-    replyContents.value = {
-      ...replyContents.value,
-      [commentId]: ''
-    };
+// 切换回复输入框显示/隐藏（互斥逻辑）
+const toggleReplyInput = (commentId: number | string) => {
+  if (activeReplyId.value === commentId) {
+    // 如果点击的是当前已打开的，则关闭
+    activeReplyId.value = null;
+  } else {
+    // 否则打开新的
+    activeReplyId.value = commentId;
+    // 初始化内容
+    if (!replyContents.value[commentId]) {
+      replyContents.value = {
+        ...replyContents.value,
+        [commentId]: ''
+      };
+    }
   }
 };
 
 // 提交回复 这是回复一级评论
 const submitReply = async (comment: CommentVO) => {
-  const content = replyContents.value[comment.commentId];
+  const content = replyContents.value[comment.commentId!];
   if (!content || !content.trim()) return;
 
   console.log('提交回复:', {
@@ -358,14 +357,14 @@ const submitReply = async (comment: CommentVO) => {
   });
   const commentAddReq:CommentAddRequest = {
     content: content,
-    parentId: comment.commentId,
-    rootCommentId: comment.commentId,
+    parentId: comment.commentId as number,
+    // rootCommentId: comment.commentId,
     postId: postVO.value.id,
-    status: 1,
-    userId: store.state.user.loginUser.id
+    // status: 1,
+    // userId: store.state.user.loginUser.id
   }
-  let res = await CommentControllerService.addCommentUsingPost(commentAddReq);
-  if (res.code === 0) {
+  let res:any = await addComment(commentAddReq);
+  if (res) {
     alert("评论成功！");
     await loadCommentData();
   }else {
@@ -374,17 +373,14 @@ const submitReply = async (comment: CommentVO) => {
   // 清空并关闭输入框
   replyContents.value = {
     ...replyContents.value,
-    [comment.commentId]: ''
+    [comment.commentId!]: ''
   };
-  replyStates.value = {
-    ...replyStates.value,
-    [comment.commentId]: false
-  };
+  activeReplyId.value = null;
 };
 
 // 提交回复 这是回复二级评论
 const submitSubReply = async (rootComment: CommentVO, parentComment: CommentVO) => {
-  const content = replyContents.value[parentComment.commentId];
+  const content = replyContents.value[parentComment.commentId!];
   if (!content || !content.trim()) return;
 
   console.log('提交回复:', {
@@ -395,14 +391,14 @@ const submitSubReply = async (rootComment: CommentVO, parentComment: CommentVO) 
   });
   const commentAddReq:CommentAddRequest = {
     content: content,
-    parentId: parentComment.commentId,
+    parentId: parentComment.commentId as number,
     postId: postVO.value.id,
-    rootCommentId: rootComment.commentId,
-    status: 1,
-    userId: store.state.user.loginUser.id
+    // rootCommentId: rootComment.commentId,
+    // status: 1,
+    // userId: store.state.user.loginUser.id
   }
-  let res = await CommentControllerService.addCommentUsingPost(commentAddReq);
-  if (res.code === 0) {
+  let res:any = await addComment(commentAddReq);
+  if (res) {
     alert("评论成功！");
     await loadCommentData();
   }else {
@@ -412,12 +408,9 @@ const submitSubReply = async (rootComment: CommentVO, parentComment: CommentVO) 
   // 清空并关闭输入框
   replyContents.value = {
     ...replyContents.value,
-    [parentComment.commentId]: ''
+    [parentComment.commentId!]: ''
   };
-  replyStates.value = {
-    ...replyStates.value,
-    [parentComment.commentId]: false
-  };
+  activeReplyId.value = null;
 };
 
 // 处理分页

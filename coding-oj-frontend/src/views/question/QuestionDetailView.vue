@@ -85,11 +85,11 @@ import message from "@arco-design/web-vue/es/message";
 import CodeEditor from "@/components/CodeEditor.vue";
 import MdViewer from "@/components/MdViewer.vue";
 import {
-  QuestionControllerService,
-  QuestionSubmitControllerService,
+  getQuestionVOById,
+  doQuestionSubmit,
   QuestionSubmitAddRequest,
   QuestionVO,
-} from "../../../generated";
+} from "@/api/question";
 
 interface Props {
   id: string;
@@ -103,15 +103,15 @@ const question = ref<QuestionVO>();
 const router = useRouter();
 
 const loadData = async () => {
-  const res = await QuestionControllerService.getQuestionVoByIdUsingGet(
+  const res:any = await getQuestionVOById(
     props.id as any
   );
-  if (res.code === 0) {
-    console.log('res.data',res.data);
+  if (res) {
+    console.log('res.data',res);
     
-    question.value = res.data;
+    question.value = res;
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 };
 
@@ -128,15 +128,15 @@ const doSubmit = async () => {
     return;
   }
 
-  const res = await QuestionSubmitControllerService.doSubmitUsingPost({
+  const res:any = await doQuestionSubmit({
     ...form.value,
     questionId: question.value.id,
   });
-  if (res.code === 0) {
+  if (res) {
     message.success("提交成功");
     router.push("/question_submit");
   } else {
-    message.error("提交失败," + res.message);
+    message.error("提交失败");
   }
 };
 

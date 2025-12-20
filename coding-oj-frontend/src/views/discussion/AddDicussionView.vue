@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import MdEditor from "@/components/MdEditor.vue";
-import {PostAddRequest, PostControllerService} from "../../../generated";
+import {PostAddRequest, addPost} from "@/api/discussion";
 import { Modal } from '@arco-design/web-vue';
 import message from "@arco-design/web-vue/es/message";
 
@@ -39,17 +39,17 @@ const doSubmit = async () => {
     title: '确认发布吗？',
     content: `确定要发布编写的帖子吗？`,
     onOk: async () => {
-      const res = await PostControllerService.addPostUsingPost(
+      const res:any = await addPost(
           form.value
       );
-      if (res.code === 0) {
+      if (res) {
         message.success("创建成功");
         alert("发布成功！");
         form.value.content = "";
-        form.value.tags = "";
+        form.value.tags = [];
         form.value.title = "";
       } else {
-        message.error("创建失败，" + res.message);
+        message.error("创建失败");
       }
     }
   })

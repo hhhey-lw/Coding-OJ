@@ -193,7 +193,8 @@ import {
   IconUserGroup,
   IconTrophy,
 } from '@arco-design/web-vue/es/icon';
-import { TagControllerService, QuestionVO } from '../../../generated';
+import { getQuestionByTagId, TagVO } from '@/api/tag';
+import { QuestionVO } from "@/api/question";
 
 import image2 from "@/assets/image-2.svg";
 import image5 from "@/assets/image-5.svg";
@@ -230,16 +231,16 @@ const loadQuestionsByTagId = async (currentTagId: string) => {
   loadingQuestions.value = true;
   console.log(currentTagId, 'currentTagId');
   try {
-    const res = await TagControllerService.getQuestionByTagIdUsingGet(
+    const res:any = await getQuestionByTagId(
+        currentTagId,
         questionPagination.value.current,
-        questionPagination.value.pageSize,
-        currentTagId as any
+        questionPagination.value.pageSize
     );
-    if (res.code === 0 && res.data) {
-      questions.value = res.data.records || [];
-      questionPagination.value.total = res.data.total || 0;
+    if (res) {
+      questions.value = res.records || [];
+      questionPagination.value.total = res.total || 0;
     } else {
-      Message.error(res.message || '加载题目列表失败');
+      Message.error('加载题目列表失败');
       questions.value = [];
       questionPagination.value.total = 0;
     }

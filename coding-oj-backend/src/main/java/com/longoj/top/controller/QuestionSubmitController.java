@@ -1,18 +1,21 @@
 package com.longoj.top.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.longoj.top.annotation.RateLimit;
-import com.longoj.top.common.BaseResponse;
-import com.longoj.top.common.ErrorCode;
-import com.longoj.top.common.ResultUtils;
-import com.longoj.top.exception.BusinessException;
-import com.longoj.top.model.dto.questionsubmit.QuestionSubmitAddRequest;
-import com.longoj.top.model.dto.questionsubmit.QuestionSubmitQueryRequest;
-import com.longoj.top.model.entity.QuestionSubmit;
-import com.longoj.top.model.entity.User;
-import com.longoj.top.model.vo.QuestionSubmitVO;
-import com.longoj.top.model.vo.UserSubmitInfoVO;
-import com.longoj.top.model.vo.UserVO;
+import com.longoj.top.infrastructure.aop.annotation.RateLimit;
+import com.longoj.top.controller.dto.BaseResponse;
+import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.ResultUtils;
+import com.longoj.top.domain.service.QuestionService;
+import com.longoj.top.domain.service.QuestionSubmitService;
+import com.longoj.top.domain.service.UserCheckInService;
+import com.longoj.top.domain.service.UserService;
+import com.longoj.top.infrastructure.exception.BusinessException;
+import com.longoj.top.controller.dto.question.QuestionSubmitAddRequest;
+import com.longoj.top.controller.dto.question.QuestionSubmitQueryRequest;
+import com.longoj.top.domain.entity.QuestionSubmit;
+import com.longoj.top.domain.entity.User;
+import com.longoj.top.controller.dto.question.QuestionSubmitVO;
+import com.longoj.top.controller.dto.user.UserSubmitInfoVO;
 import com.longoj.top.service.*;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +25,10 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
+/**
+ * 题目提交接口
+ */
 @Slf4j
-// @Api(tags = "题目提交接口")
 @RequestMapping("/question_submit")
 @RestController
 public class QuestionSubmitController {

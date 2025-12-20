@@ -1,7 +1,7 @@
 // initial state
 import { StoreOptions } from "vuex";
 import ACCESS_ENUM from "@/access/accessEnum";
-import { UserControllerService } from "../../generated";
+import { getLoginUser, userLogout } from "@/api/user";
 
 export default {
   namespaced: true,
@@ -18,11 +18,11 @@ export default {
         return;
       }
       // 从远程请求获取登录信息
-      const res = await UserControllerService.getLoginUserUsingGet();
-      if (res.code === 0) {
-        console.log('LoginUser res.data', res.data);
+      const res:any = await getLoginUser();
+      if (res) {
+        console.log('LoginUser res.data', res);
 
-        commit("updateUser", res.data);
+        commit("updateUser", res);
       } else {
         commit("updateUser", {
           ...state.loginUser,
@@ -31,8 +31,8 @@ export default {
       }
     },
     async logout({ commit }){
-      const res = await UserControllerService.userLogoutUsingPost();
-      if (res.code === 0) {
+      const res = await userLogout();
+      if (res) {
       }
     },
 

@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { reactive } from "vue";
-import { UserControllerService, UserLoginRequest } from "../../../generated";
+import { userLogin, UserLoginRequest } from "@/api/user";
 import message from "@arco-design/web-vue/es/message";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
@@ -59,19 +59,19 @@ const store = useStore();
  * @param data
  */
 const handleSubmit = async () => {
-  const res = await UserControllerService.userLoginUsingPost(form);
+  const res:any = await userLogin(form);
   console.log(res);
   // 登录成功，跳转到主页
-  if (res.code === 0) {
+  if (res) {
     await store.dispatch("user/getLoginUser");
-    await store.dispatch("user/setTokenManually", res.data);
+    await store.dispatch("user/setTokenManually", res);
     console.log(store.state.user.token)
     router.push({
       path: "/",
       replace: true,
     });
   } else {
-    message.error("登陆失败，" + res.message);
+    message.error("登陆失败");
   }
 };
 

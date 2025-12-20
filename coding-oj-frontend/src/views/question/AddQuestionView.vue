@@ -134,7 +134,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import MdEditor from "@/components/MdEditor.vue";
-import { QuestionControllerService } from "../../../generated";
+import { getQuestionById, updateQuestion, addQuestion } from "@/api/question";
 import message from "@arco-design/web-vue/es/message";
 import { useRouter, useRoute } from "vue-router";
 import {Message} from "@arco-design/web-vue";
@@ -175,11 +175,11 @@ const loadData = async () => {
   if (!id) {
     return;
   }
-  const res = await QuestionControllerService.getQuestionByIdUsingGet(
+  const res:any = await getQuestionById(
     id as any
   );
-  if (res.code === 0) {
-    form.value = res.data as any;
+  if (res) {
+    form.value = res as any;
     // json 转 js 对象
     if (!form.value.judgeCase) {
       form.value.judgeCase = [
@@ -206,7 +206,7 @@ const loadData = async () => {
       form.value.tags = JSON.parse(form.value.tags as any);
     }
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 };
 
@@ -222,22 +222,22 @@ const doSubmit = async () => {
   console.log(form.value);
   // 区分更新还是创建
   if (updatePage) {
-    const res = await QuestionControllerService.updateQuestionUsingPost(
+    const res:any = await updateQuestion(
       form.value
     );
-    if (res.code === 0) {
+    if (res) {
       message.success("更新成功");
     } else {
-      message.error("更新失败，" + res.message);
+      message.error("更新失败");
     }
   } else {
-    const res = await QuestionControllerService.addQuestionUsingPost(
+    const res:any = await addQuestion(
       form.value
     );
-    if (res.code === 0) {
+    if (res) {
       message.success("创建成功");
     } else {
-      message.error("创建失败，" + res.message);
+      message.error("创建失败");
     }
   }
 };

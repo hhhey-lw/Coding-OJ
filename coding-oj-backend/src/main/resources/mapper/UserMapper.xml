@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.UserMapper">
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.User">
+<mapper namespace="com.longoj.top.infrastructure.mapper.UserMapper">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.User">
         <id property="id" column="id" jdbcType="BIGINT"/>
         <result property="unionId" column="union_id" jdbcType="VARCHAR"/>
         <result property="mpOpenId" column="mp_open_id" jdbcType="VARCHAR"/>

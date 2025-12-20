@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.MqLocalMessageMapper">
+<mapper namespace="com.longoj.top.infrastructure.mapper.MqLocalMessageMapper">
 
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.MqLocalMessage">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.MqLocalMessage">
             <id property="messageId" column="message_id" jdbcType="VARCHAR"/>
             <result property="exchangeName" column="exchange_name" jdbcType="VARCHAR"/>
             <result property="routingKey" column="routing_key" jdbcType="VARCHAR"/>

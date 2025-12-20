@@ -68,10 +68,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watchEffect } from "vue";
 import {
-  Page_Question_,
-  Question,
-  QuestionControllerService,
-} from "../../../generated";
+  listQuestionByPage,
+  deleteQuestion,
+  QuestionVO
+} from "@/api/question";
 import { Modal } from '@arco-design/web-vue';
 import message from "@arco-design/web-vue/es/message";
 import { useRouter } from "vue-router";
@@ -87,16 +87,16 @@ const searchParams = ref({
 });
 
 const loadData = async () => {
-  const res = await QuestionControllerService.listQuestionByPageUsingPost(
+  const res:any = await listQuestionByPage(
     searchParams.value
   );
-  if (res.code === 0) {
-    console.log('res--manage', res.data);
+  if (res) {
+    console.log('res--manage', res);
 
-    dataList.value = res.data.records;
-    total.value = res.data.total;
+    dataList.value = res.records;
+    total.value = res.total;
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 };
 
@@ -156,15 +156,15 @@ const onPageChange = (page: number) => {
   };
 };
 
-const doDelete = async (question: Question) => {
+const doDelete = async (question: QuestionVO) => {
   Modal.confirm({
     title: '确认删除',
     content: `确定要删除题目 "${question.title}" 吗？此操作不可撤销。`,
     onOk: async () => {
-      const res = await QuestionControllerService.deleteQuestionUsingPost({
-        id: question.id,
+      const res = await deleteQuestion({
+        id: question.id as any,
       });
-      if (res.code === 0) {
+      if (res) {
         message.success("删除成功");
         loadData();
       } else {
@@ -176,7 +176,7 @@ const doDelete = async (question: Question) => {
 
 const router = useRouter();
 
-const doUpdate = (question: Question) => {
+const doUpdate = (question: QuestionVO) => {
   router.push({
     path: "/update/question",
     query: {

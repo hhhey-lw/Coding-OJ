@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.PostFavourMapper">
+<mapper namespace="com.longoj.top.infrastructure.mapper.PostFavourMapper">
 
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.PostFavour">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.PostFavour">
         <id property="id" column="id" jdbcType="BIGINT"/>
         <result property="postId" column="post_id" jdbcType="BIGINT"/>
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
@@ -18,7 +18,7 @@
     </sql>
 
     <select id="listFavourPostByPage"
-            resultType="com.longoj.top.model.entity.Post">
+            resultType="com.longoj.top.domain.entity.Post">
         select p.*
         from post p
                  join (select post_id from post_favour where user_id = #{favourUserId}) pf

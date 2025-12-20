@@ -49,10 +49,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watchEffect, computed } from "vue";
 import {
-  Question,
-  QuestionSubmitControllerService,
+  listUserQuestionSubmitByPage,
   QuestionSubmitQueryRequest,
-} from "../../../generated";
+  QuestionVO
+} from "@/api/question";
 import message from "@arco-design/web-vue/es/message";
 import { useRouter } from "vue-router";
 import moment from "moment";
@@ -99,18 +99,18 @@ const columns = [
 // =========》 函数定义 《===========
 
 const loadData = async () => {
-  const res = await QuestionSubmitControllerService.listUserQuestionSubmitByPageUsingPost(
+  const res:any = await listUserQuestionSubmitByPage(
     {
       ...searchParams.value,
       sortField: "create_time",
       sortOrder: "descend",
     }
   );
-  if (res.code === 0) {
-    dataList.value = res.data.records;
-    total.value = res.data.total;
+  if (res) {
+    dataList.value = res.records;
+    total.value = res.total;
   } else {
-    message.error("加载失败，" + res.message);
+    message.error("加载失败");
   }
 
 };

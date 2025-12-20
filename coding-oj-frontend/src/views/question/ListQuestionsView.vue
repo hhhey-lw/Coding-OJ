@@ -180,12 +180,11 @@ import UserCheckInView from "@/views/user/UserCheckInView.vue";
 import { Card as ACard, Space as ASpace } from "@arco-design/web-vue";
 import { IconTags, IconClose } from "@arco-design/web-vue/es/icon";
 import {
-  QuestionControllerService,
+  listQuestionVOByPage,
   QuestionQueryRequest,
-  TagControllerService,
-  TagVO,
   QuestionVO,
-} from "../../../generated";
+} from "@/api/question";
+import { getTagByPage, TagVO } from "@/api/tag";
 import message from "@arco-design/web-vue/es/message";
 
 // 导入静态资源 (推荐题单图标)
@@ -279,14 +278,14 @@ const loadData = async () => {
     searchParams.value.tags = []; // 确保tags始终是一个数组
   }
   try {
-    const res = await QuestionControllerService.listQuestionVoByPageUsingPost(
+    const res:any = await listQuestionVOByPage(
         searchParams.value
     );
-    if (res.code === 0) {
-      dataList.value = res.data.records as QuestionVO[];
-      total.value = res.data.total;
+    if (res) {
+      dataList.value = res.records as QuestionVO[];
+      total.value = res.total;
     } else {
-      message.error("加载题目列表失败，" + res.message);
+      message.error("加载题目列表失败");
     }
   } catch (error) {
     message.error("加载题目列表时发生错误");
@@ -300,13 +299,13 @@ const loadData = async () => {
 const loadAllTags = async () => {
   try {
     // 假设一页获取足够多的标签，更优方案是后端提供获取所有标签的接口
-    const res = await TagControllerService.getTagByPageUsingGet(1, 200); // 增加获取数量
-    if (res.code === 0 && res.data?.records) {
-      allTags.value = res.data.records.filter(
-          (tag): tag is TagVO & { tagName: string } => !!tag.tagName
+    const res:any = await getTagByPage(1, 200); // 增加获取数量
+    if (res && res.records) {
+      allTags.value = res.records.filter(
+          (tag:any) => !!tag.tagName
       );
     } else {
-      message.error("加载标签列表失败：" + (res.message || "未知错误"));
+      message.error("加载标签列表失败");
     }
   } catch (error) {
     message.error("加载标签列表时出错，请查看控制台");

@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.UserSubmitSummaryMapper">
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.UserSubmitSummary">
+<mapper namespace="com.longoj.top.infrastructure.mapper.UserSubmitSummaryMapper">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.UserSubmitSummary">
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="yearMonthDay" column="year_month_day" jdbcType="VARCHAR"/>
         <result property="submitCount" column="submit_count" jdbcType="INTEGER"/>
@@ -29,14 +29,14 @@
         WHERE user_id = #{userId} AND year_month_day = #{yyyyMMDD}
     </update>
 
-    <select id="querySubmitSummary" resultType="com.longoj.top.model.entity.UserSubmitSummary">
+    <select id="querySubmitSummary" resultType="com.longoj.top.domain.entity.UserSubmitSummary">
         SELECT <include refid="Base_Column_List"/>
         FROM user_submit_summary
         WHERE user_id = #{userId} AND year_month_day = #{yyyyMMDD}
     </select>
 
     <select id="selectUserPassedCountsByTopNumber"
-            resultType="com.longoj.top.model.dto.questionsubmit.UserPassedCountDTO">
+            resultType="com.longoj.top.domain.entity.dto.UserPassedCountDTO">
         SELECT
             user_id AS userId,
             SUM(accept_count) AS passedCount,

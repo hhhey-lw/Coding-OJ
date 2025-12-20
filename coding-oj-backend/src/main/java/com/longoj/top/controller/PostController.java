@@ -2,29 +2,27 @@ package com.longoj.top.controller;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.longoj.top.annotation.AuthCheck;
-import com.longoj.top.common.BaseResponse;
-import com.longoj.top.common.DeleteRequest;
-import com.longoj.top.common.ErrorCode;
-import com.longoj.top.common.ResultUtils;
-import com.longoj.top.constant.UserConstant;
-import com.longoj.top.exception.BusinessException;
-import com.longoj.top.exception.ThrowUtils;
-import com.longoj.top.model.dto.post.PostAddRequest;
-import com.longoj.top.model.dto.post.PostEditRequest;
-import com.longoj.top.model.dto.post.PostQueryRequest;
-import com.longoj.top.model.dto.post.PostUpdateRequest;
-import com.longoj.top.model.entity.Post;
-import com.longoj.top.model.entity.User;
-import com.longoj.top.model.vo.PostVO;
-import com.longoj.top.service.PostService;
-import com.longoj.top.service.UserService;
+import com.longoj.top.infrastructure.aop.annotation.AuthCheck;
+import com.longoj.top.controller.dto.BaseResponse;
+import com.longoj.top.controller.dto.DeleteRequest;
+import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.ResultUtils;
+import com.longoj.top.domain.entity.constant.UserConstant;
+import com.longoj.top.infrastructure.exception.BusinessException;
+import com.longoj.top.infrastructure.utils.ThrowUtils;
+import com.longoj.top.controller.dto.post.PostAddRequest;
+import com.longoj.top.controller.dto.post.PostEditRequest;
+import com.longoj.top.controller.dto.post.PostQueryRequest;
+import com.longoj.top.controller.dto.post.PostUpdateRequest;
+import com.longoj.top.domain.entity.Post;
+import com.longoj.top.domain.entity.User;
+import com.longoj.top.controller.dto.post.PostVO;
+import com.longoj.top.domain.service.PostService;
+import com.longoj.top.domain.service.UserService;
 import java.util.List;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-import com.longoj.top.utils.UserContext;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -32,12 +30,10 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 帖子接口
- *
  */
+@Slf4j
 @RestController
 @RequestMapping("/post")
-@Slf4j
-// @Api(tags = "帖子接口")
 public class PostController {
 
     @Resource
@@ -52,7 +48,6 @@ public class PostController {
      * 创建
      *
      * @param postAddRequest
-     * @param request
      * @return
      */
     @ApiOperation("创建帖子")
@@ -78,7 +73,7 @@ public class PostController {
         boolean result = postService.save(post);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         long newPostId = post.getId();
-        return ResultUtils.success(newPostId);
+        return ResultUtils.success(postService.addPost(postAddRequest));
     }
 
     /**

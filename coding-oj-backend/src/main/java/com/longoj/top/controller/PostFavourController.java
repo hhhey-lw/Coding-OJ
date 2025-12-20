@@ -1,25 +1,23 @@
 package com.longoj.top.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.longoj.top.common.BaseResponse;
-import com.longoj.top.common.ErrorCode;
-import com.longoj.top.common.ResultUtils;
-import com.longoj.top.exception.BusinessException;
-import com.longoj.top.exception.ThrowUtils;
-import com.longoj.top.model.dto.post.PostQueryRequest;
-import com.longoj.top.model.dto.postfavour.PostFavourAddRequest;
-import com.longoj.top.model.dto.postfavour.PostFavourQueryRequest;
-import com.longoj.top.model.entity.Post;
-import com.longoj.top.model.entity.User;
-import com.longoj.top.model.vo.PostVO;
-import com.longoj.top.service.PostFavourService;
-import com.longoj.top.service.PostService;
-import com.longoj.top.service.UserService;
+import com.longoj.top.controller.dto.BaseResponse;
+import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.ResultUtils;
+import com.longoj.top.infrastructure.exception.BusinessException;
+import com.longoj.top.infrastructure.utils.ThrowUtils;
+import com.longoj.top.controller.dto.post.PostQueryRequest;
+import com.longoj.top.controller.dto.postfavour.PostFavourAddRequest;
+import com.longoj.top.controller.dto.postfavour.PostFavourQueryRequest;
+import com.longoj.top.domain.entity.Post;
+import com.longoj.top.domain.entity.User;
+import com.longoj.top.controller.dto.post.PostVO;
+import com.longoj.top.domain.service.PostFavourService;
+import com.longoj.top.domain.service.PostService;
+import com.longoj.top.domain.service.UserService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-import com.longoj.top.utils.UserContext;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 帖子收藏接口
- *
  */
 @Slf4j
 @RestController

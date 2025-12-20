@@ -1,23 +1,24 @@
 package com.longoj.top.controller;
 
 import cn.hutool.core.io.FileUtil;
-import com.longoj.top.common.BaseResponse;
-import com.longoj.top.common.ErrorCode;
-import com.longoj.top.common.ResultUtils;
-import com.longoj.top.constant.FileConstant;
-import com.longoj.top.exception.BusinessException;
-import com.longoj.top.manager.CosManager;
-import com.longoj.top.model.dto.file.UploadFileRequest;
-import com.longoj.top.model.entity.User;
-import com.longoj.top.model.enums.FileUploadBizEnum;
-import com.longoj.top.service.UserService;
+import com.longoj.top.controller.dto.BaseResponse;
+import com.longoj.top.infrastructure.config.CosClientConfig;
+import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.ResultUtils;
+import com.longoj.top.domain.entity.constant.FileConstant;
+import com.longoj.top.infrastructure.exception.BusinessException;
+import com.longoj.top.controller.dto.file.UploadFileRequest;
+import com.longoj.top.domain.entity.User;
+import com.longoj.top.domain.entity.enums.FileUploadBizEnum;
+import com.longoj.top.domain.service.UserService;
 import java.io.File;
 import java.util.Arrays;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-import com.longoj.top.utils.UserContext;
-import io.swagger.annotations.Api;
+import com.qcloud.cos.COSClient;
+import com.qcloud.cos.model.PutObjectRequest;
+import com.qcloud.cos.model.PutObjectResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,19 +29,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 文件接口
- *
  */
 @Slf4j
 @RestController
 @RequestMapping("/file")
-@Api(tags = "file-controller")
 public class FileController {
 
     @Resource
     private UserService userService;
-
-    @Resource
-    private CosManager cosManager;
 
     /**
      * 文件上传
@@ -70,7 +66,7 @@ public class FileController {
             // 上传文件
             file = File.createTempFile(filepath, null);
             multipartFile.transferTo(file);
-            cosManager.putObject(filepath, file);
+            putObject(filepath, file);
             // 返回可访问地址
             return ResultUtils.success(FileConstant.COS_HOST + filepath);
         } catch (Exception e) {
@@ -108,4 +104,24 @@ public class FileController {
             }
         }
     }
+
+    @Resource
+    private CosClientConfig cosClientConfig;
+
+    @Resource
+    private COSClient cosClient;
+
+    /**
+     * 上传对象
+     *
+     * @param key 唯一键
+     * @param file 文件
+     * @return
+     */
+    public PutObjectResult putObject(String key, File file) {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key,
+                file);
+        return cosClient.putObject(putObjectRequest);
+    }
+
 }

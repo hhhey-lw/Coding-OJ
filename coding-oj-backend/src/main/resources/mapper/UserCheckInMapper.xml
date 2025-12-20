@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.longoj.top.mapper.UserCheckInMapper">
-    <resultMap id="BaseResultMap" type="com.longoj.top.model.entity.UserCheckIn">
+<mapper namespace="com.longoj.top.infrastructure.mapper.UserCheckInMapper">
+    <resultMap id="BaseResultMap" type="com.longoj.top.domain.entity.UserCheckIn">
         <result property="userId" column="user_id" jdbcType="BIGINT"/>
         <result property="yearMonth" column="year_month" jdbcType="VARCHAR"/>
         <result property="bitmap" column="bitmap" jdbcType="INTEGER"/>
@@ -37,7 +37,7 @@
         ]]>
 </update>
 
-    <select id="getUserCheckInByUserIdAndYearMonth" resultType="com.longoj.top.model.entity.UserCheckIn">
+    <select id="getUserCheckInByUserIdAndYearMonth" resultType="com.longoj.top.domain.entity.UserCheckIn">
         select <include refid="Base_Column_List"/>
         FROM user_check_in
         WHERE user_id = #{userId} AND `year_month` = #{yearMonth};

@@ -1,18 +1,16 @@
 package com.longoj.top.controller;
 
-import com.longoj.top.common.BaseResponse;
-import com.longoj.top.common.ErrorCode;
-import com.longoj.top.common.ResultUtils;
-import com.longoj.top.exception.BusinessException;
-import com.longoj.top.model.dto.postthumb.PostThumbAddRequest;
-import com.longoj.top.model.entity.User;
-import com.longoj.top.service.PostThumbService;
-import com.longoj.top.service.UserService;
+import com.longoj.top.controller.dto.BaseResponse;
+import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.ResultUtils;
+import com.longoj.top.infrastructure.exception.BusinessException;
+import com.longoj.top.controller.dto.postthumb.PostThumbAddRequest;
+import com.longoj.top.domain.entity.User;
+import com.longoj.top.domain.service.PostThumbService;
+import com.longoj.top.domain.service.UserService;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
-import com.longoj.top.utils.UserContext;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,12 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 帖子点赞接口
- *
  */
+@Slf4j
 @RestController
 @RequestMapping("/post_thumb")
-@Slf4j
-// @Api(tags = "帖子点赞接口")
 public class PostThumbController {
 
     @Resource
