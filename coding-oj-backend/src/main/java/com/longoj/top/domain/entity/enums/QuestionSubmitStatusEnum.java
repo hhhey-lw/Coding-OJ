@@ -3,8 +3,8 @@ package com.longoj.top.domain.entity.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-@AllArgsConstructor
 @Getter
+@AllArgsConstructor
 public enum QuestionSubmitStatusEnum {
 
     WAITING(0, "等待中"),
@@ -12,17 +12,20 @@ public enum QuestionSubmitStatusEnum {
     SUCCESS(2, "执行成功"),
     ERROR(3, "执行失败");
 
-    private final Integer status;
+    private final Integer code;
 
-    private final String value;
+    private final String Description;
 
-    public static String getValue(Integer status) {
-        switch (status) {
-            case 0: return WAITING.value;
-            case 1: return RUNNING.value;
-            case 2: return SUCCESS.value;
-            default: return ERROR.value;
+    public static QuestionSubmitStatusEnum getByCode(Integer code) {
+        if (code == null) {
+            return null;
         }
+        for (QuestionSubmitStatusEnum statusEnum : QuestionSubmitStatusEnum.values()) {
+            if (statusEnum.getCode().equals(code)) {
+                return statusEnum;
+            }
+        }
+        return null;
     }
 
 }

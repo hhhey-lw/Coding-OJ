@@ -20,9 +20,7 @@ public class JwtInterceptor implements HandlerInterceptor {
     private UserService userService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response,
-                             Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         System.err.println("执行拦截器！");
         // 1. 获取请求头中的token
         String token = request.getHeader(JwtTokenUtil.tokenHeader);

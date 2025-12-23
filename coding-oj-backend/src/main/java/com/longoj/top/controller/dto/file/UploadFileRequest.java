@@ -1,5 +1,6 @@
 package com.longoj.top.controller.dto.file;
 
+import java.io.Serial;
 import java.io.Serializable;
 import lombok.Data;
 
@@ -15,5 +16,6 @@ public class UploadFileRequest implements Serializable {
      */
     private String biz;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 }

@@ -23,9 +23,7 @@ public interface UserCheckInService {
     boolean updateUserCheckInByOneDay(Long userId, String yearMonth, Integer day);
 
     /**
-     * 自动为用户签到某一天
-     *
-     * @param userId 用户ID
+     * 为用户签到某一天
      */
-    void autoUserSignInOneDaySummary(Long userId);
+    void checkInOfLoginUser();
 }

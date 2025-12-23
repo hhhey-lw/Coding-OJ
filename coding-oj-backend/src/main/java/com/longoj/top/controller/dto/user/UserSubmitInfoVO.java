@@ -5,8 +5,14 @@ import lombok.Data;
 @Data
 public class UserSubmitInfoVO extends UserVO {
 
+    /**
+     * 通过题目数量
+     */
     Integer passedQuestionNumber; // 通过题目数量
 
+    /**
+     * 总提交数量
+     */
     Integer totalSubmitNumber; // 总提交数量
 
 }

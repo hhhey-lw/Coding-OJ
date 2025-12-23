@@ -20,7 +20,7 @@
         <java.version>17</java.version>
         <mybatis.plus.version>3.5.2</mybatis.plus.version>
         <knife4j.version>4.4.0</knife4j.version>
-        <cos.api.version>5.6.89</cos.api.version>
+        <aliyun.oss.version>3.17.4</aliyun.oss.version>
         <hutool.version>5.8.8</hutool.version>
     </properties>
 
@@ -58,11 +58,11 @@
             <version>${knife4j.version}</version>
         </dependency>
 
-        <!-- https://cloud.tencent.com/document/product/436/10199-->
+        <!-- https://help.aliyun.com/document_detail/32009.html -->
         <dependency>
-            <groupId>com.qcloud</groupId>
-            <artifactId>cos_api</artifactId>
-            <version>${cos.api.version}</version>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>${aliyun.oss.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->

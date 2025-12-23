@@ -2,29 +2,28 @@ package com.longoj.top.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.longoj.top.controller.dto.post.TagVO;
-import com.longoj.top.domain.service.QuestionTagService;
-import com.longoj.top.domain.service.TagService;
+import com.longoj.top.controller.dto.question.*;
+import com.longoj.top.controller.dto.user.UserSubmitInfoVO;
+import com.longoj.top.domain.service.*;
 import com.longoj.top.infrastructure.aop.annotation.AuthCheck;
 import com.longoj.top.controller.dto.BaseResponse;
 import com.longoj.top.controller.dto.DeleteRequest;
+import com.longoj.top.infrastructure.aop.annotation.RateLimit;
 import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.utils.ResultUtils;
 import com.longoj.top.domain.entity.constant.UserConstant;
-import com.longoj.top.controller.dto.question.QuestionAddRequest;
-import com.longoj.top.controller.dto.question.QuestionQueryRequest;
-import com.longoj.top.controller.dto.question.QuestionUpdateRequest;
 import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.domain.entity.Question;
-import com.longoj.top.controller.dto.question.QuestionVO;
-import com.longoj.top.domain.service.QuestionService;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 
 /**
@@ -43,6 +42,12 @@ public class QuestionController {
 
     @Resource
     private TagService tagService;
+
+    @Resource
+    private QuestionSubmitService questionSubmitService;
+
+    @Resource
+    private UserCheckInService userCheckInService;
 
     // region 增删改查
 
@@ -103,77 +108,94 @@ public class QuestionController {
 
     /**
      * 分页获取题目列表（仅管理员）
-     *
-     * @param questionQueryRequest
-     * @return
      */
     @ApiOperation("分页获取题目")
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<Question>> listQuestionByPage(@RequestBody QuestionQueryRequest questionQueryRequest) {
-        long current = questionQueryRequest.getCurrent();
-        long size = questionQueryRequest.getPageSize();
-        Page<Question> questionPage = questionService.page(new Page<>(current, size),
-                questionService.getQueryWrapper(questionQueryRequest));
-
-
-
-        return ResultUtils.success(questionPage);
+        return ResultUtils.success(questionService.page(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(), questionQueryRequest.getUserId(),
+                questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
 
     /**
      * 分页获取题目封装列表
-     *
-     * @param questionQueryRequest
-     * @return
      */
     @ApiOperation("分页获取题目封装列表")
     @PostMapping("/list/page/vo")
-    public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest,
-                                                               HttpServletRequest request) {
-        return ResultUtils.success(questionService.getQuestionVO(questionQueryRequest, request));
+    public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest) {
+        return ResultUtils.success(questionService.pageVO(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(), questionQueryRequest.getUserId(),
+                questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
-
     // endregion
 
     /**
      * 更新题目信息
-     *
-     * @param questionUpdateRequest
-     * @return
      */
     @Deprecated
     @ApiOperation("更新题目信息")
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyQuestion(@RequestBody QuestionUpdateRequest questionUpdateRequest) {
-        Question question = new Question();
-        BeanUtils.copyProperties(questionUpdateRequest, question);
-        boolean result = questionService.updateById(question);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(true);
+        return ResultUtils.success(questionService.update(questionUpdateRequest));
     }
-
 
     // ================> 题目标签相关接口 <================
-
-    @GetMapping("/tag/name/{tagName}/{current}/{pageSize}")
-    public BaseResponse<Page<QuestionVO>> getQuestionByTagName(@PathVariable(value = "tagName") String tagName,
-                                                               @PathVariable(value = "current") Long current,
-                                                               @PathVariable(value = "pageSize") Long pageSize) {
-        return ResultUtils.success(questionTagService.getQuestionByTagName(tagName, current, pageSize));
-    }
 
     @GetMapping("/tag/id/{tagId}/{current}/{pageSize}")
     public BaseResponse<Page<QuestionVO>> getQuestionByTagId(@PathVariable(value = "tagId") Long tagId,
                                                              @PathVariable(value = "current") Long current,
                                                              @PathVariable(value = "pageSize") Long pageSize) {
-        return ResultUtils.success(questionTagService.getQuestionByTagId(tagId, current, pageSize));
+        return ResultUtils.success(questionTagService.pageQuestionByTagId(tagId, current, pageSize));
     }
 
     @GetMapping("/tag/queryTag/{current}/{pageSize}")
     public BaseResponse<Page<TagVO>> getTagByPage(@PathVariable(value = "current") Long current,
                                                   @PathVariable(value = "pageSize") Long pageSize) {
         return ResultUtils.success(tagService.getTagBypage(current, pageSize));
+    }
+
+    // ================> 题目提交相关接口 <================
+    /**
+     * 提交&执行代码
+     */
+    @RateLimit
+    @ApiOperation("提交代码")
+    @PostMapping("/submit/do")
+    @Transactional(rollbackFor = Exception.class)
+    public BaseResponse<Long> doSubmit(@RequestBody QuestionSubmitAddRequest questionSubmitAddRequest) {
+        if (questionSubmitAddRequest == null || questionSubmitAddRequest.getQuestionId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 提交代码进行判题
+        Long questionSubmitId = questionSubmitService.submit(questionSubmitAddRequest);
+
+        // 更新用户当天签到和每日提交统计
+        userCheckInService.checkInOfLoginUser();
+        // 更新题目提交数
+        questionService.updateQuestionSubmitNum(questionSubmitAddRequest.getQuestionId());
+
+        return ResultUtils.success(questionSubmitId);
+    }
+
+
+    @ApiOperation("分页查询提交的记录")
+    @PostMapping("/submit/list/page")
+    public BaseResponse<Page<QuestionSubmitVO>> listQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest) {
+        return ResultUtils.success(questionSubmitService.pageQuery(questionSubmitQueryRequest));
+    }
+
+    @ApiOperation("分页查询用户自己提交问题")
+    @PostMapping("/submit/list/page/user")
+    public BaseResponse<Page<QuestionSubmitVO>> listUserQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest) {
+        int current = questionSubmitQueryRequest.getCurrent();
+        int pageSize = questionSubmitQueryRequest.getPageSize();
+        return ResultUtils.success(questionSubmitService.pageMy(questionSubmitQueryRequest.getQuestionId(), questionSubmitQueryRequest.getStatus(), questionSubmitQueryRequest.getLanguage(), current, pageSize));
+    }
+
+    @ApiOperation("提交榜单Top N 用户")
+    @GetMapping("/submit/topPassed/{topNumber}")
+    public BaseResponse<List<UserSubmitInfoVO>> getTopPassedQuestionUserList(@PathVariable int topNumber) {
+        return ResultUtils.success(questionSubmitService.getTopPassedQuestionUserList(topNumber));
     }
 
 }

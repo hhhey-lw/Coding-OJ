@@ -8,8 +8,9 @@ import com.longoj.top.controller.dto.post.TagVO;
 import java.util.List;
 
 /**
+ * 标签表服务
+ *
 * @author 韦龙
-* @description 针对表【tag(标签表)】的数据库操作Service
 * @createDate 2025-06-16 14:50:42
 */
 public interface TagService extends IService<Tag> {

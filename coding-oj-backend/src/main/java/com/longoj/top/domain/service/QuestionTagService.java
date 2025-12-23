@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.longoj.top.domain.entity.QuestionTag;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.longoj.top.controller.dto.question.QuestionVO;
+import com.longoj.top.domain.entity.Tag;
 
 import java.util.List;
 
@@ -13,7 +14,11 @@ import java.util.List;
  * @author 韦龙
  */
 public interface QuestionTagService extends IService<QuestionTag> {
-    List<String> getTagsByQuestionId(Long questionId);
+
+    /**
+     * 根据题目ID获取标签列表
+     */
+    List<Tag> getTagsByQuestionId(Long questionId);
 
     /**
      * 关联题目和标签
@@ -25,10 +30,14 @@ public interface QuestionTagService extends IService<QuestionTag> {
      */
     void removeByQuestionId(Long id);
 
+    /**
+     * 关联题目和标签（移动过期的，补充新增的）
+     */
     Boolean delAndSetTagsByQuestionId(Long questionId, List<String> tagList);
 
-    Page<QuestionVO> getQuestionByTagName(String tagName, Long current, Long pageSize);
-
-    Page<QuestionVO> getQuestionByTagId(Long tagId, Long current, Long pageSize);
+    /**
+     * 根据标签ID分页获取题目列表
+     */
+    Page<QuestionVO> pageQuestionByTagId(Long tagId, Long current, Long pageSize);
 
 }

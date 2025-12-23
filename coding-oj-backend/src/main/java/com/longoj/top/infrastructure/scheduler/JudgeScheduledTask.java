@@ -2,10 +2,10 @@ package com.longoj.top.infrastructure.scheduler;
 
 import cn.hutool.json.JSONUtil;
 import com.longoj.top.infrastructure.mq.publisher.JudgeServicePublisher;
-import com.longoj.top.domain.entity.MqLocalMessage;
+import com.longoj.top.domain.entity.LocalMessage;
 import com.longoj.top.domain.entity.QuestionSubmit;
 import com.longoj.top.domain.entity.enums.MQMessageStatusEnum;
-import com.longoj.top.domain.service.MqLocalMessageService;
+import com.longoj.top.domain.service.LocalMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class JudgeScheduledTask {
     private final Integer MAX_RETRY_COUNT = 3; // 最大重试次数
 
     @Resource
-    private MqLocalMessageService mqLocalMessageService;
+    private LocalMessageService localMessageService;
 
     @Resource
     private JudgeServicePublisher judgeServicePublisher;
@@ -33,8 +33,8 @@ public class JudgeScheduledTask {
     public void resendFailedMessages() {
         log.info("开始执行定时任务：扫描并重发本地消息表中的失败/待处理消息");
 
-        List<MqLocalMessage> messagesToResend = mqLocalMessageService.lambdaQuery()
-                .eq(MqLocalMessage::getStatus, MQMessageStatusEnum.FAILED)
+        List<LocalMessage> messagesToResend = localMessageService.lambdaQuery()
+                .eq(LocalMessage::getStatus, MQMessageStatusEnum.FAILED)
                 .list();
 
         if (CollectionUtils.isEmpty(messagesToResend)) {
@@ -44,27 +44,27 @@ public class JudgeScheduledTask {
 
         log.info("发现 {} 条需要重发的消息", messagesToResend.size());
 
-        for (MqLocalMessage localMessage : messagesToResend) {
+        for (LocalMessage localMessage : messagesToResend) {
             try {
                 // 增加重试次数
                 int currentRetryCount = localMessage.getRetryCount() == null ? 0 : localMessage.getRetryCount();
                 if (currentRetryCount >= MAX_RETRY_COUNT) {
                     log.warn("消息重试次数已达上限，ID: {}", localMessage.getMessageId());
                     // 可以选择将状态更新为最终失败
-                    mqLocalMessageService.lambdaUpdate()
-                            .set(MqLocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED)
-                            .set(MqLocalMessage::getErrorCause, "Max retry count reached")
-                            .eq(MqLocalMessage::getMessageId, localMessage.getMessageId())
+                    localMessageService.lambdaUpdate()
+                            .set(LocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED)
+                            .set(LocalMessage::getErrorCause, "Max retry count reached")
+                            .eq(LocalMessage::getMessageId, localMessage.getMessageId())
                             .update();
                     continue;
                 }
 
                 localMessage.setRetryCount(currentRetryCount + 1);
                 // 更新状态为待发送，并增加重试次数
-                mqLocalMessageService.lambdaUpdate()
-                        .set(MqLocalMessage::getStatus, MQMessageStatusEnum.PENDING)
-                        .set(MqLocalMessage::getRetryCount, localMessage.getRetryCount())
-                        .eq(MqLocalMessage::getMessageId, localMessage.getMessageId())
+                localMessageService.lambdaUpdate()
+                        .set(LocalMessage::getStatus, MQMessageStatusEnum.PENDING)
+                        .set(LocalMessage::getRetryCount, localMessage.getRetryCount())
+                        .eq(LocalMessage::getMessageId, localMessage.getMessageId())
                         .update();
 
                 QuestionSubmit questionSubmit = JSONUtil.toBean(localMessage.getPayload(), QuestionSubmit.class);
@@ -73,10 +73,10 @@ public class JudgeScheduledTask {
             } catch (Exception e) {
                 log.error("重发消息失败，ID: {}, 错误: {}", localMessage.getMessageId(), e.getMessage(), e);
                 // 如果重发仍然失败，可以考虑更新状态为最终失败，或根据重试次数决定
-                mqLocalMessageService.lambdaUpdate()
-                        .set(MqLocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED) // 或者根据重试次数判断
-                        .set(MqLocalMessage::getErrorCause, "Resend failed: " + e.getMessage())
-                        .eq(MqLocalMessage::getMessageId, localMessage.getMessageId())
+                localMessageService.lambdaUpdate()
+                        .set(LocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED) // 或者根据重试次数判断
+                        .set(LocalMessage::getErrorCause, "Resend failed: " + e.getMessage())
+                        .eq(LocalMessage::getMessageId, localMessage.getMessageId())
                         .update();
             }
         }

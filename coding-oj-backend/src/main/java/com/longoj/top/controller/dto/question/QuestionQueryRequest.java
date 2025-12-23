@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
@@ -24,28 +25,26 @@ public class QuestionQueryRequest extends PageRequest implements Serializable {
     private Long id;
 
     /**
-     * 标题
+     * 搜索关键字：标题
      */
-    private String title;
-
-    /**
-     * 内容
-     */
-    private String content;
+    private String searchKey;
 
     /**
      * 标签列表（json 数组）
      */
     private List<String> tags;
 
+    /**
+     * 难度
+     */
     private Integer difficulty;
-
 
     /**
      * 创建用户 id
      */
     private Long userId;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
 }

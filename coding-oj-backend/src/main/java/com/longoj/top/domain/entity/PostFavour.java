@@ -44,7 +44,26 @@ public class PostFavour implements Serializable {
      */
     private Date updateTime;
 
+    /**
+     * 是否删除
+     */
+    private Integer isDelete;
+
     @Serial
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 构建实体
+     */
+    public static PostFavour buildEntity(Long postId, Long loginUserId) {
+        PostFavour postFavour = new PostFavour();
+        postFavour.setPostId(postId);
+        postFavour.setUserId(loginUserId);
+        postFavour.setIsDelete(0);
+        Date now = new Date();
+        postFavour.setCreateTime(now);
+        postFavour.setUpdateTime(now);
+        return postFavour;
+    }
 }

@@ -3,6 +3,7 @@ package com.longoj.top.domain.entity.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * 文件上传业务类型枚举
@@ -12,22 +13,24 @@ import org.apache.commons.lang3.ObjectUtils;
 @AllArgsConstructor
 public enum FileUploadBizEnum {
 
-    USER_AVATAR("用户头像", "user_avatar");
+    USER_AVATAR(0, "user_avatar", "用户头像");
 
-    private final String text;
+    private final Integer code;
 
-    private final String value;
+    private final String enCode;
+
+    private final String description;
 
     /**
-     * 根据 value 获取枚举
+     * 根据 enCode 获取枚举
      */
-    public static FileUploadBizEnum getEnumByValue(String value) {
-        if (ObjectUtils.isEmpty(value)) {
+    public static FileUploadBizEnum getByEnCode(String enCode) {
+        if (StringUtils.isEmpty(enCode)) {
             return null;
         }
-        for (FileUploadBizEnum anEnum : FileUploadBizEnum.values()) {
-            if (anEnum.value.equals(value)) {
-                return anEnum;
+        for (FileUploadBizEnum bizEnum : FileUploadBizEnum.values()) {
+            if (bizEnum.getEnCode().equals(enCode)) {
+                return bizEnum;
             }
         }
         return null;

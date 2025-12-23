@@ -3,16 +3,17 @@ package com.longoj.top.domain.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.longoj.top.domain.entity.enums.QuestionPassStatusEnum;
+import com.longoj.top.domain.entity.enums.UserRoleEnum;
+import com.longoj.top.domain.repository.QuestionSubmitRepository;
 import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.PageUtil;
 import com.longoj.top.infrastructure.utils.RedisKeyUtil;
-import com.longoj.top.domain.entity.constant.CommonConstant;
 import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.mq.publisher.JudgeServicePublisher;
-import com.longoj.top.domain.entity.dto.JudgeInfo;
 import com.longoj.top.controller.dto.question.QuestionSubmitAddRequest;
 import com.longoj.top.controller.dto.question.QuestionSubmitQueryRequest;
 import com.longoj.top.domain.entity.Question;
@@ -27,8 +28,7 @@ import com.longoj.top.domain.service.QuestionService;
 import com.longoj.top.domain.service.QuestionSubmitService;
 import com.longoj.top.infrastructure.mapper.QuestionSubmitMapper;
 import com.longoj.top.domain.service.UserService;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
+import com.longoj.top.infrastructure.utils.UserContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,13 +39,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
-* @author 韦龙
-* @description 针对表【question_submit(题目提交)】的数据库操作Service实现
-* @createDate 2025-05-15 00:13:26
-*/
+ * question_submit(题目提交记录)
+ *
+ * @author 韦龙
+ * @createDate 2025-05-15 00:13:26
+ */
 @Service
-public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper, QuestionSubmit>
-implements QuestionSubmitService{
+public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper, QuestionSubmit> implements QuestionSubmitService {
 
     @Resource
     private QuestionService questionService;
@@ -54,16 +54,17 @@ implements QuestionSubmitService{
     private UserService userService;
 
     @Resource
+    private QuestionSubmitRepository questionSubmitRepository;
+
+    @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    // @Resource
-    // private JudgeExecutor judgeExecutor;
     @Resource
     private JudgeServicePublisher judgeServicePublisher;
 
     @Override
     @Transactional
-    public Long doQuestionSubmit(QuestionSubmitAddRequest questionSubmitAddRequest, User loginUser) {
+    public Long submit(QuestionSubmitAddRequest questionSubmitAddRequest) {
         // 1. 校验参数;
         // 1.1. 提交语言
         if (!QuestionSubmitLanguageEnum.isExist(questionSubmitAddRequest.getLanguage())) {
@@ -78,18 +79,8 @@ implements QuestionSubmitService{
         // TODO
 
         // 2. 设置初始状态
-        QuestionSubmit submit = QuestionSubmit.builder()
-                .questionId(question.getId())
-                .code(questionSubmitAddRequest.getCode())
-                .language(questionSubmitAddRequest.getLanguage())
-                .judgeInfo(JSONUtil.toJsonStr(JudgeInfo.builder()
-                                .memory(null)
-                                .message(QuestionSubmitStatusEnum.WAITING.getValue())
-                                .time(null)
-                        .build()))
-                .userId(loginUser.getId())
-                .status(QuestionSubmitStatusEnum.WAITING.getStatus())
-                .build();
+        User loginUser = UserContext.getUser();
+        QuestionSubmit submit = QuestionSubmit.toEntity(questionSubmitAddRequest, question, loginUser);
 
         // 3. 保存判题信息
         boolean save = save(submit);
@@ -98,16 +89,7 @@ implements QuestionSubmitService{
         }
 
         // 4. 异步执行服务
-        // 调用代码沙箱！
         QuestionSubmit questionSubmit = getById(submit.getId());
-        // 放队列中，异步执行
-        // judgeExecutor.pushTaskQueue(questionSubmit);
-        // CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-        //     judgeService.doJudge(questionSubmit);
-        // });
-        // 线程池
-        // JudgeInfo judgeInfo = judgeService.doJudge(questionSubmit);
-        // 消息队列
         judgeServicePublisher.sendDoJudgeMessage(questionSubmit);
 
         // mybatis 自动回填
@@ -115,53 +97,13 @@ implements QuestionSubmitService{
     }
 
     @Override
-    public Wrapper<QuestionSubmit> getQueryWrapper(QuestionSubmitQueryRequest questionSubmitQueryRequest) {
-        QueryWrapper<QuestionSubmit> queryWrapper = new QueryWrapper<>();
-        if (questionSubmitQueryRequest == null) {
-            return queryWrapper;
-        }
-
-        // 获取请求
-        String language = questionSubmitQueryRequest.getLanguage();
-        Long userId = questionSubmitQueryRequest.getUserId();
-        Integer status = questionSubmitQueryRequest.getStatus();
-        String sortField = questionSubmitQueryRequest.getSortField();
-        String sortOrder = questionSubmitQueryRequest.getSortOrder();
-
-        // 构造查询表达包装
-        // 拼接查询条件
-        queryWrapper.eq(StringUtils.isNotBlank(language), "language", language);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "user_id", userId);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(status), "status", status);
-        queryWrapper.eq("is_delete", false);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
-        return queryWrapper;
-    }
-
-    @Override
-    public Page<QuestionSubmitVO> getQuestionSubmitVOPage(Page<QuestionSubmit> page, User loginUser) {
-        List<QuestionSubmit> pageRecords = page.getRecords();
-        Page<QuestionSubmitVO> questionSubmitVOPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        if (CollectionUtil.isEmpty(pageRecords)) {
-            return questionSubmitVOPage;
-        }
-
-        List<QuestionSubmitVO> submitVOList = pageRecords.stream().map(
-                questionSubmit -> getQuestionSubmitVO(questionSubmit, loginUser)
-        ).collect(Collectors.toList());
-
-        questionSubmitVOPage.setRecords(submitVOList);
-        return questionSubmitVOPage;
-    }
-
-    @Override
-    public boolean isQuestionSubmitExecuted(Long id) {
+    public boolean isExecuted(Long id) {
         QuestionSubmit questionSubmit = baseMapper.selectById(id);
         if (questionSubmit == null) {
             return true;
         }
         Integer status = questionSubmit.getStatus();
-        return !(status.intValue() == QuestionSubmitStatusEnum.WAITING.getStatus().intValue());
+        return !(status.intValue() == QuestionSubmitStatusEnum.WAITING.getCode().intValue());
     }
 
     /* 从Redis中查询Top10通过数最多的用户 */
@@ -174,22 +116,58 @@ implements QuestionSubmitService{
         String topPassedNumberKey = RedisKeyUtil.getTopPassedNumberKey();
         String res = stringRedisTemplate.opsForValue().get(topPassedNumberKey);
 
-        if (StrUtil.isBlank(res)){
+        if (StrUtil.isBlank(res)) {
             return Collections.emptyList();
         }
 
         return JSONUtil.toList(res, UserSubmitInfoVO.class);
     }
 
+    @Override
+    public List<Long> listPassedQuestionId(Long userId) {
+        List<QuestionSubmit> submits = questionSubmitRepository.list(userId, QuestionPassStatusEnum.ACCEPTED);
+        if (CollectionUtil.isEmpty(submits)) {
+            return Collections.emptyList();
+        }
+        return submits.stream().map(QuestionSubmit::getId).collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<QuestionSubmitVO> pageQuery(QuestionSubmitQueryRequest questionSubmitQueryRequest) {
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(questionSubmitQueryRequest.getLanguage(), questionSubmitQueryRequest.getQuestionId(),
+                questionSubmitQueryRequest.getUserId(), QuestionSubmitStatusEnum.getByCode(questionSubmitQueryRequest.getStatus()),
+                questionSubmitQueryRequest.getCurrent(), questionSubmitQueryRequest.getPageSize());
+        return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));
+    }
+
+    @Override
+    public Page<QuestionSubmitVO> pageMy(Integer questionId, Integer status, String language, int current, int pageSize) {
+        User loginUser = UserContext.getUser();
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(language, questionId,
+                loginUser.getId(), QuestionSubmitStatusEnum.getByCode(status),
+                current, pageSize);
+        return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));
+    }
+
+    @Override
+    public void updatePassStatus(Long id, QuestionPassStatusEnum passStatusEnum) {
+        LambdaUpdateWrapper<QuestionSubmit> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(QuestionSubmit::getPassStatus, passStatusEnum.getEnCode());
+        updateWrapper.eq(QuestionSubmit::getId, id);
+        baseMapper.update(null, updateWrapper);
+    }
+
+    /**
+     * 脱敏处理并转换为 VO 对象
+     */
     private QuestionSubmitVO getQuestionSubmitVO(QuestionSubmit questionSubmit, User loginUser) {
         // 脱敏处理
-        QuestionSubmitVO questionSubmitVO = QuestionSubmitVO.objToVO(questionSubmit);
+        QuestionSubmitVO questionSubmitVO = QuestionSubmitVO.convertToVO(questionSubmit);
 
         // 仅本人和管理员 可以查看提交的代码
-        if (loginUser == null || !userService.isAdmin(loginUser) || !loginUser.getId().equals(questionSubmit.getUserId())) {
+        if (loginUser == null || !UserRoleEnum.ADMIN.getCode().equals(loginUser.getUserRole()) || !loginUser.getId().equals(questionSubmit.getUserId())) {
             questionSubmitVO.setCode("");
         }
-        // questionSubmitVO.setUserVO(BeanUtil.copyProperties(loginUser, UserVO.class));
 
         questionSubmitVO.setUserVO(userService.getUserVOByUserId(questionSubmit.getUserId()));
         Question question = questionService.getById(questionSubmit.getQuestionId());

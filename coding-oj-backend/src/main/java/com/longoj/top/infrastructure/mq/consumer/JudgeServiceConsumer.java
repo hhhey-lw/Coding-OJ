@@ -2,7 +2,7 @@ package com.longoj.top.infrastructure.mq.consumer;
 
 import cn.hutool.json.JSONUtil;
 import com.longoj.top.infrastructure.config.JudgeMQConfig;
-import com.longoj.top.domain.service.JudgeService;
+import com.longoj.top.domain.service.codesandbox.JudgeService;
 import com.longoj.top.domain.entity.QuestionSubmit;
 import com.longoj.top.domain.service.QuestionSubmitService;
 import com.rabbitmq.client.Channel;
@@ -39,7 +39,7 @@ public class JudgeServiceConsumer {
                 return;
             }
             // 幂等性
-            if (questionSubmitService.isQuestionSubmitExecuted(questionSubmit.getId())) {
+            if (questionSubmitService.isExecuted(questionSubmit.getId())) {
                 log.info("Question submit already exists, skipping: {}", questionSubmit.getId());
                 channel.basicAck(deliveryTag, false); // 手动确认消息
                 return;
@@ -66,7 +66,7 @@ public class JudgeServiceConsumer {
             // 在这里添加你的业务处理逻辑
             QuestionSubmit questionSubmit = JSONUtil.toBean(content, QuestionSubmit.class);
             // 幂等性
-            if (questionSubmitService.isQuestionSubmitExecuted(questionSubmit.getId())) {
+            if (questionSubmitService.isExecuted(questionSubmit.getId())) {
                 log.info("Question submit already exists, skipping: {}", questionSubmit.getId());
                 channel.basicAck(deliveryTag, false); // 手动确认消息
                 return;

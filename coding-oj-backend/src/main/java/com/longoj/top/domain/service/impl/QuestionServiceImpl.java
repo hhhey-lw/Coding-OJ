@@ -1,18 +1,15 @@
 package com.longoj.top.domain.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.longoj.top.domain.repository.QuestionRepository;
+import com.longoj.top.domain.repository.QuestionSubmitRepository;
+import com.longoj.top.domain.service.QuestionSubmitService;
 import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.infrastructure.utils.PageUtil;
 import com.longoj.top.infrastructure.utils.RedisKeyUtil;
 import com.longoj.top.controller.dto.question.QuestionAddRequest;
-import com.longoj.top.controller.dto.question.QuestionQueryRequest;
 import com.longoj.top.controller.dto.question.QuestionUpdateRequest;
 import com.longoj.top.domain.entity.Question;
 import com.longoj.top.domain.entity.User;
@@ -20,24 +17,20 @@ import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.controller.dto.question.QuestionVO;
 import com.longoj.top.controller.dto.user.UserVO;
-import com.longoj.top.domain.service.QuestionPassedService;
 import com.longoj.top.domain.service.QuestionService;
 import com.longoj.top.infrastructure.mapper.QuestionMapper;
 import com.longoj.top.domain.service.QuestionTagService;
 import com.longoj.top.domain.service.UserService;
+import com.longoj.top.infrastructure.utils.UserContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 题目服务
@@ -55,7 +48,10 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private QuestionTagService questionTagService;
 
     @Resource
-    private QuestionPassedService questionPassedService;
+    private QuestionSubmitService questionSubmitService;
+
+    @Resource
+    private QuestionRepository questionRepository;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -100,7 +96,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         if (questionUpdateRequest == null || questionUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Question question = QuestionUpdateRequest.toQuestion(questionUpdateRequest);
+        Question question = QuestionUpdateRequest.toEntity(questionUpdateRequest);
         // 参数校验
         validQuestion(question);
 
@@ -117,6 +113,32 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return true;
     }
 
+    @Override
+    public boolean isPassed(Long questionId, Long userId) {
+        // 1. 参数校验
+        if (questionId == null || userId == null || userId <= 0) {
+            return false;
+        }
+        String userPassedQuestionKey = RedisKeyUtil.getUserPassedQuestionKey(userId);
+
+        // 2. 尝试从缓存获取
+        Set<String> passedSet = stringRedisTemplate.opsForSet().members(userPassedQuestionKey);
+        if (CollectionUtil.isNotEmpty(passedSet)) {
+            return passedSet.contains(questionId.toString());
+        }
+
+        // 3. 重数据库查询并缓存
+        List<Long> passedQuestionIds = questionSubmitService.listPassedQuestionId(userId);
+        if (CollectionUtil.isEmpty(passedQuestionIds)) {
+            return false;
+        }
+
+        String[] idArray = passedQuestionIds.stream().map(String::valueOf).toArray(String[]::new);
+        stringRedisTemplate.opsForSet().add(userPassedQuestionKey, idArray);
+        stringRedisTemplate.expire(userPassedQuestionKey, 10, TimeUnit.MINUTES);
+
+        return passedQuestionIds.contains(questionId);
+    }
 
     @Override
     public int updateQuestionSubmitNum(Long questionId) {
@@ -126,189 +148,6 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Override
     public int updateQuestionAcceptedNum(Long questionId) {
         return baseMapper.updateAcceptedNum(questionId);
-    }
-
-
-    @Override
-    public boolean isPassed(Long questionId, Long userId) {
-        // 1. 参数校验
-        if (questionId == null || userId == null || userId <= 0) {
-            return false;
-        }
-        String userPassedQuestionKey = RedisKeyUtil.getUserPassedQuestionKey(userId);
-
-        // 2. 检查缓存是否存在
-        Boolean hasKey = stringRedisTemplate.hasKey(userPassedQuestionKey);
-
-        if (BooleanUtil.isFalse(hasKey)) {
-            // 3. 缓存不存在，使用分布式锁防止缓存击穿
-            String lockKey = RedisKeyUtil.LOCK + userPassedQuestionKey;
-            Boolean lockAcquired = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", 10, java.util.concurrent.TimeUnit.SECONDS);
-
-            if (BooleanUtil.isFalse(lockAcquired)) {
-                // 未获取到锁，说明有其他线程在重建，直接返回false，避免用户等待
-                return false;
-            }
-
-            try {
-                // 4. 获取锁成功，进行双重检查
-                hasKey = stringRedisTemplate.hasKey(userPassedQuestionKey);
-                if (BooleanUtil.isFalse(hasKey)) {
-                    // 从数据库查询该用户所有通过的题目ID
-                    List<Long> questionIds = questionPassedService.getQuestionIdsByUserId(userId);
-                    if (CollectionUtil.isNotEmpty(questionIds)) {
-                        // 修复类型问题：将 Long 列表转为 String 数组
-                        String[] idArray = questionIds.stream().map(String::valueOf).toArray(String[]::new);
-                        stringRedisTemplate.opsForSet().add(userPassedQuestionKey, idArray);
-                        stringRedisTemplate.expire(userPassedQuestionKey, 24, java.util.concurrent.TimeUnit.HOURS);
-                    } else {
-                        // 防止缓存穿透：如果用户未通过任何题目，也缓存一个空标记
-                        stringRedisTemplate.opsForSet().add(userPassedQuestionKey, "");
-                        stringRedisTemplate.expire(userPassedQuestionKey, 5, java.util.concurrent.TimeUnit.MINUTES);
-                    }
-                }
-            } finally {
-                // 5. 修复：在 finally 块中释放锁
-                stringRedisTemplate.delete(lockKey);
-            }
-        }
-
-        // 6. 修复：从缓存查询并返回正确结果
-        Boolean isPassed = stringRedisTemplate.opsForSet().isMember(userPassedQuestionKey, String.valueOf(questionId));
-        return Boolean.TRUE.equals(isPassed);
-    }
-
-    @Override
-    public Page<QuestionVO> getQuestionVO(QuestionQueryRequest questionQueryRequest, HttpServletRequest request) {
-        List<String> tags = questionQueryRequest.getTags();
-        String title = questionQueryRequest.getTitle();
-        if (StrUtil.isBlank(title) && CollectionUtil.isEmpty(tags)) {
-            // 如果没有搜索条件，使用Redis进行缓存
-            return getQuestionVOBYRedis(questionQueryRequest, request);
-        }
-        return getQuestionVOByTagAndSearch(questionQueryRequest, request);
-    }
-
-    public Page<QuestionVO> getQuestionVOByTagAndSearch(QuestionQueryRequest questionQueryRequest, HttpServletRequest request) {
-        if (questionQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        long current = questionQueryRequest.getCurrent();
-        long size = questionQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-
-        Page<Question> questionPage = page(new Page<>(current, size),
-                getQueryWrapper(questionQueryRequest));
-        List<Question> records = questionPage.getRecords();
-
-        if (CollectionUtils.isEmpty(records)) {
-            // 如果没有题目，直接返回空结果
-            return new Page<QuestionVO>(current, size, 0).setRecords(Collections.emptyList());
-        }
-
-        List<QuestionVO> questionVOList = getQuestionVOPage(records);
-
-        Page<QuestionVO> questionVOPage = new Page<>(current, size, questionPage.getTotal());
-
-        try {
-            User loginUser = userService.getLoginUser(request);
-            // 设置题目通过状态
-            questionVOList.forEach(questionVOItem -> questionVOItem.setPassed(isPassed(questionVOItem.getId(), loginUser.getId())));
-        } catch (Exception e) {
-            log.error("获取登录用户失败, 不设置题目通过状态", e);
-        }
-        questionVOPage.setRecords(questionVOList);
-        return questionVOPage;
-    }
-
-    public Page<QuestionVO> getQuestionVOBYRedis(QuestionQueryRequest questionQueryRequest, HttpServletRequest request) {
-        if (questionQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        long current = questionQueryRequest.getCurrent();
-        long size = questionQueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-
-        List<QuestionVO> questionList;
-        Long total;
-
-        // 先从Redis中获取题目列表
-        String questionListKey = RedisKeyUtil.getQuestionListKey(current, size);
-        String questionListTotalKey = RedisKeyUtil.getQuestionListTotalKey(current, size);
-
-        String questionJSONStr = stringRedisTemplate.opsForValue().get(questionListKey);
-
-        // 缓存命中
-        if (StrUtil.isNotBlank(questionJSONStr)) {
-            // 空值 - 避免缓存穿透
-            if (questionJSONStr.equals("[]")) {
-                // 如果缓存中有空字符串，说明没有数据，直接返回空结果
-                return new Page<QuestionVO>(current, size, 0).setRecords(Collections.emptyList());
-            }
-            log.debug("Redis中有题目列表，查询缓存");
-            questionList = JSONUtil.toList(questionJSONStr, QuestionVO.class);
-            String totalStr = stringRedisTemplate.opsForValue().get(questionListTotalKey);
-            if (StrUtil.isNotBlank(totalStr)) {
-                total = Long.valueOf(totalStr);
-            } else {
-                total = 0L;
-            }
-        } else {
-            // 缓存未命中，使用分布式锁防止缓存击穿
-            Boolean lock = stringRedisTemplate.opsForValue().setIfAbsent(RedisKeyUtil.LOCK + questionListKey, "1", 10, TimeUnit.SECONDS);
-
-            if (BooleanUtil.isTrue(lock)) {
-                // 获取锁成功，进行双重检查
-                questionJSONStr = stringRedisTemplate.opsForValue().get(questionListKey);
-                if (StrUtil.isNotBlank(questionJSONStr)) {
-                    // 如果缓存中有数据，直接返回
-                    questionList = JSONUtil.toList(questionJSONStr, QuestionVO.class);
-                    String totalStr = stringRedisTemplate.opsForValue().get(questionListTotalKey);
-                    if (StrUtil.isNotBlank(totalStr)) {
-                        total = Long.valueOf(totalStr);
-                    } else {
-                        total = 0L;
-                    }
-                } else {
-                    log.debug("Redis中没有题目列表，查询数据库，并更新缓存");
-                    Page<Question> questionPage = page(new Page<>(current, size),
-                            getQueryWrapper(questionQueryRequest));
-                    List<Question> records = questionPage.getRecords();
-
-                    if (CollectionUtils.isEmpty(records)) {
-                        // 如果没有题目，直接返回空结果
-                        questionList = Collections.emptyList();
-                        total = 0L;
-
-                        stringRedisTemplate.opsForValue().set(questionListKey, "[]", 1, TimeUnit.MINUTES);
-                        stringRedisTemplate.opsForValue().set(questionListTotalKey, "0", 1, TimeUnit.MINUTES);
-                    } else {
-                        questionList = getQuestionVOPage(records);
-                        total = questionPage.getTotal();
-
-                        stringRedisTemplate.opsForValue().set(questionListKey, JSONUtil.toJsonStr(records), 24, TimeUnit.HOURS);
-                        stringRedisTemplate.opsForValue().set(questionListTotalKey, String.valueOf(questionPage.getTotal()), 24, TimeUnit.HOURS);
-                    }
-                }
-            } else {
-                // 未获取到锁，直接返回空结果
-                return new Page<QuestionVO>(current, size, 0).setRecords(Collections.emptyList());
-            }
-        }
-
-        Page<QuestionVO> questionVOPage = new Page<>(current, size, total);
-
-        try {
-            User loginUser = userService.getLoginUser(request);
-            // 设置题目通过状态
-            questionList.forEach(questionVOItem -> questionVOItem.setPassed(isPassed(questionVOItem.getId(), loginUser.getId())));
-        } catch (Exception e) {
-            log.error("获取登录用户失败, 不设置题目通过状态", e);
-        }
-
-        return questionVOPage.setRecords(questionList);
     }
 
     @Override
@@ -322,37 +161,37 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         User user = userService.getById(question.getUserId());
         questionVO.setUserVO(UserVO.toVO(user));
 
+        // 3. 设置通过状态
+        questionVO.setPassed(isPassed(question.getId(), user.getId()));
+
         return questionVO;
     }
 
     @Override
-    public List<QuestionVO> getQuestionVOPage(List<Question> questionList) {
-
-        Set<Long> userIds = questionList.stream().map(Question::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userList = userService.listByIds(userIds).stream().collect(Collectors.groupingBy(User::getId));
-
-        List<QuestionVO> res = questionList.stream().map(question -> {
-            QuestionVO questionVO = QuestionVO.convertToVo(question);
-            questionVO.setUserVO(BeanUtil.copyProperties(userList.get(question.getUserId()).get(0), UserVO.class));
-            return questionVO;
-        }).collect(Collectors.toList());
-
-        // for (QuestionVO re : res) {
-        //     List<String> tags = questionTagService.getTagsByQuestionId(re.getId());
-        //     if (tags != null && CollectionUtil.isNotEmpty(tags)){
-        //         re.setTags(tags);
-        //     }
-        // }
-
-        return res;
+    public Page<QuestionVO> pageVO(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize) {
+        Page<Question> questionPage = questionRepository.page(searchKey, difficulty, tags, userId, current, pageSize);
+        Page<QuestionVO> questionVOPage = PageUtil.convertToVO(questionPage, QuestionVO::convertToVo);
+        User currentUser = UserContext.getUser();
+        questionVOPage.getRecords().forEach(questionVO -> {
+            questionVO.setPassed(isPassed(questionVO.getId(), currentUser.getId()));
+        });
+        return questionVOPage;
     }
 
     @Override
-    public Wrapper<Question> getQueryWrapper(QuestionQueryRequest questionQueryRequest) {
-        return null;
+    public Page<Question> page(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize) {
+        return questionRepository.page(searchKey, difficulty, tags, userId, current, pageSize);
     }
 
+    @Override
+    public Boolean update(QuestionUpdateRequest questionUpdateRequest) {
+        Question question = QuestionUpdateRequest.toEntity(questionUpdateRequest);
+        return updateById(question);
+    }
 
+    /**
+     * 校验题目参数
+     */
     private void validQuestion(Question question) {
         if (question == null) {
             return;

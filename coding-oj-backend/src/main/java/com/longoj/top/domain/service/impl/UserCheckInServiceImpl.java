@@ -2,6 +2,7 @@ package com.longoj.top.domain.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import com.longoj.top.domain.entity.User;
 import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.mapper.UserCheckInMapper;
@@ -11,6 +12,7 @@ import com.longoj.top.domain.entity.UserSubmitSummary;
 import com.longoj.top.controller.dto.user.UserCheckInVO;
 import com.longoj.top.controller.dto.user.UserSubmitSummaryVO;
 import com.longoj.top.domain.service.UserCheckInService;
+import com.longoj.top.infrastructure.utils.UserContext;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,10 +92,10 @@ public class UserCheckInServiceImpl implements UserCheckInService {
     }
 
     @Override
-    public void autoUserSignInOneDaySummary(Long userId) {
+    public void checkInOfLoginUser() {
         LocalDate now = LocalDate.now();
         UserCheckInService proxy = (UserCheckInService) AopContext.currentProxy();
-        proxy.updateUserCheckInByOneDay(userId,
+        proxy.updateUserCheckInByOneDay(UserContext.getUser().getId(),
                 now.format(DateTimeFormatter.ofPattern("yyyy-MM")), now.getDayOfMonth());
     }
 

@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.BeanUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -112,7 +111,7 @@ public class QuestionUpdateRequest implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public static Question toQuestion(QuestionUpdateRequest questionUpdateRequest) {
+    public static Question toEntity(QuestionUpdateRequest questionUpdateRequest) {
         if (questionUpdateRequest == null) {
             return null;
         }

@@ -16,19 +16,15 @@ public enum QuestionSubmitLanguageEnum {
      CPP("cpp", "cpp"),
      Go("go", "go");
 
-     private final String text;
-     private final String value;
+     private final String code;
+     private final String description;
 
-     public List<String> getValuesList() {
-         return Arrays.stream(values()).map(item -> item.value).collect(Collectors.toList());
-     }
-
-     public static boolean isExist(String value) {
-          if (StrUtil.isBlank(value)) {
+     public static boolean isExist(String code) {
+          if (StrUtil.isBlank(code)) {
                return false;
           }
           for (QuestionSubmitLanguageEnum languageEnum : values()) {
-               if (languageEnum.value.equals(value)){
+               if (languageEnum.description.equals(code)){
                     return true;
                }
           }

@@ -2,7 +2,11 @@ package com.longoj.top.controller.dto.post;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
+
+import cn.hutool.json.JSONUtil;
+import com.longoj.top.domain.entity.Post;
 import lombok.Data;
 
 /**
@@ -29,4 +33,23 @@ public class PostAddRequest implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 转换为实体
+     */
+    public static Post toEntity(PostAddRequest postAddRequest) {
+        Post post = new Post();
+        post.setTitle(postAddRequest.getTitle());
+        post.setContent(postAddRequest.getContent());
+        post.setTags(JSONUtil.toJsonStr(postAddRequest.getTags()));
+        post.setCommentNum(0);
+        post.setFavourNum(0);
+        post.setViewNum(0);
+        post.setThumbNum(0);
+        post.setIsDelete(0);
+        Date now = new Date();
+        post.setCreateTime(now);
+        post.setUpdateTime(now);
+        return post;
+    }
 }

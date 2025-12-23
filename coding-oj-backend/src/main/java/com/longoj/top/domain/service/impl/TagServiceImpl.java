@@ -7,7 +7,6 @@ import com.longoj.top.controller.dto.post.TagVO;
 import com.longoj.top.domain.service.TagService;
 import com.longoj.top.infrastructure.mapper.TagMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;

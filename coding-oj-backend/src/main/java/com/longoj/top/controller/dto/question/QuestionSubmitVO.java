@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -67,13 +68,24 @@ public class QuestionSubmitVO implements Serializable {
      */
     private Date updateTime;
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
-    public static QuestionSubmitVO objToVO(QuestionSubmit questionSubmit) {
+    /**
+     * 实体对象转换为 VO 对象
+     */
+    public static QuestionSubmitVO convertToVO(QuestionSubmit questionSubmit) {
         if (questionSubmit == null) {
             return null;
         }
-        QuestionSubmitVO questionSubmitVO = BeanUtil.copyProperties(questionSubmit, QuestionSubmitVO.class, "judgeInfo", "userVO", "questionVO");
+        QuestionSubmitVO questionSubmitVO = new QuestionSubmitVO();
+        questionSubmitVO.setId(questionSubmit.getId());
+        questionSubmitVO.setLanguage(questionSubmit.getLanguage());
+        questionSubmitVO.setCode(questionSubmit.getCode());
+        questionSubmitVO.setStatus(questionSubmit.getStatus());
+        questionSubmitVO.setCreateTime(questionSubmit.getCreateTime());
+        questionSubmitVO.setUpdateTime(questionSubmit.getUpdateTime());
+
         questionSubmitVO.setJudgeInfo(JSONUtil.toBean(questionSubmit.getJudgeInfo(), JudgeInfo.class));
         return  questionSubmitVO;
     }

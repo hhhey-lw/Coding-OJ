@@ -2,10 +2,10 @@ package com.longoj.top.domain.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.longoj.top.controller.dto.comment.CommentAddRequest;
-import com.longoj.top.controller.dto.comment.CommentPageQueryRequest;
+import com.longoj.top.controller.dto.post.CommentAddRequest;
+import com.longoj.top.controller.dto.post.CommentPageQueryRequest;
 import com.longoj.top.domain.entity.Comment;
-import com.longoj.top.controller.dto.comment.CommentVO;
+import com.longoj.top.controller.dto.post.CommentVO;
 
 public interface CommentService extends IService<Comment> {
 

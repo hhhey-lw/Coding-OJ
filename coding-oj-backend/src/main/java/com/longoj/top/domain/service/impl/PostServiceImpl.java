@@ -1,12 +1,16 @@
 package com.longoj.top.domain.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.longoj.top.infrastructure.exception.ErrorCode;
+import com.longoj.top.controller.dto.post.PostAddRequest;
+import com.longoj.top.controller.dto.post.PostUpdateRequest;
 import com.longoj.top.domain.entity.constant.CommonConstant;
+import com.longoj.top.domain.repository.PostFavourRepository;
+import com.longoj.top.domain.repository.PostThumbRepository;
 import com.longoj.top.infrastructure.exception.BusinessException;
-import com.longoj.top.infrastructure.utils.ThrowUtils;
+import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.mapper.PostFavourMapper;
 import com.longoj.top.infrastructure.mapper.PostMapper;
 import com.longoj.top.infrastructure.mapper.PostThumbMapper;
@@ -24,15 +28,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import com.longoj.top.infrastructure.utils.PageUtil;
+import com.longoj.top.infrastructure.utils.ThrowUtils;
+import com.longoj.top.infrastructure.utils.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.collection.CollUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 帖子服务实现
@@ -46,130 +55,43 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private UserService userService;
 
     @Resource
-    private PostThumbMapper postThumbMapper;
+    private PostFavourRepository postFavourRepository;
 
     @Resource
-    private PostFavourMapper postFavourMapper;
+    private PostThumbRepository postThumbRepository;
 
-    /**
-     * 获取查询包装类
-     *
-     * @param postQueryRequest
-     * @return
-     */
     @Override
-    public QueryWrapper<Post> getQueryWrapper(PostQueryRequest postQueryRequest) {
-        QueryWrapper<Post> queryWrapper = new QueryWrapper<>();
-        if (postQueryRequest == null) {
-            return queryWrapper;
-        }
-        String searchText = postQueryRequest.getSearchText();
-        String sortField = postQueryRequest.getSortField();
-        String sortOrder = postQueryRequest.getSortOrder();
-        Long id = postQueryRequest.getId();
-        String title = postQueryRequest.getTitle();
-        String content = postQueryRequest.getContent();
-        List<String> tagList = postQueryRequest.getTags();
-        Long userId = postQueryRequest.getUserId();
-        Long notId = postQueryRequest.getNotId();
-        // 拼接查询条件
-        if (StringUtils.isNotBlank(searchText)) {
-            queryWrapper.and(qw -> qw.like("title", searchText).or().like("content", searchText));
-        }
-        queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
-        queryWrapper.like(StringUtils.isNotBlank(content), "content", content);
-        if (CollUtil.isNotEmpty(tagList)) {
-            for (String tag : tagList) {
-                queryWrapper.like("tags", "\"" + tag + "\"");
-            }
-        }
-        queryWrapper.ne(ObjectUtils.isNotEmpty(notId) && notId != 0, "id", notId);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(id) && id != 0, "id", id);
-        queryWrapper.eq(ObjectUtils.isNotEmpty(userId) && userId != 0, "user_id", userId);
-        queryWrapper.orderBy(StringUtils.isNotBlank(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC), sortField);
-        return queryWrapper;
+    public Long addPost(PostAddRequest postAddRequest) {
+        Post post = PostAddRequest.toEntity(postAddRequest);
+        this.save(post);
+        return post.getId();
     }
 
     @Override
-    public PostVO getPostVO(Post post, HttpServletRequest request) {
-        PostVO postVO = PostVO.objToVo(post);
-        long postId = post.getId();
-        // 1. 关联查询用户信息
-        Long userId = post.getUserId();
-        User user = null;
-        if (userId != null && userId > 0) {
-            user = userService.getById(userId);
+    public PostVO getPostVO(Long postId) {
+        Post post = getById(postId);
+        if (post == null) {
+            throw new BusinessException("帖子不存在");
         }
-        UserVO userVO = userService.getUserVO(user);
+        PostVO postVO = PostVO.convertToVo(post);
+
+        // 1. 关联查询用户信息
+        UserVO userVO = UserVO.toVO(userService.getById(post.getUserId()));
         postVO.setUser(userVO);
+
         // 2. 已登录，获取用户点赞、收藏状态
-        User loginUser = userService.getLoginUserPermitNull(request);
+        User loginUser = UserContext.getUser();
         if (loginUser != null) {
             // 获取点赞
-            QueryWrapper<PostThumb> postThumbQueryWrapper = new QueryWrapper<>();
-            postThumbQueryWrapper.in("post_id", postId);
-            postThumbQueryWrapper.eq("user_id", loginUser.getId());
-            PostThumb postThumb = postThumbMapper.selectOne(postThumbQueryWrapper);
-            postVO.setHasThumb(postThumb != null);
+            PostThumb postThumb = postThumbRepository.getThumbPostByUserId(postId, loginUser.getId());
+            postVO.setIsThumb(postThumb != null);
             // 获取收藏
-            QueryWrapper<PostFavour> postFavourQueryWrapper = new QueryWrapper<>();
-            postFavourQueryWrapper.in("post_id", postId);
-            postFavourQueryWrapper.eq("user_id", loginUser.getId());
-            PostFavour postFavour = postFavourMapper.selectOne(postFavourQueryWrapper);
-            postVO.setHasFavour(postFavour != null);
+            PostFavour postFavour = postFavourRepository.getFavourRecord(postId, loginUser.getId());
+            postVO.setIsFavour(postFavour != null);
         }
         // 浏览 + 1
         incrementPageView(postId);
         return postVO;
-    }
-
-    @Override
-    public Page<PostVO> getPostVOPage(Page<Post> postPage, HttpServletRequest request) {
-        List<Post> postList = postPage.getRecords();
-        Page<PostVO> postVOPage = new Page<>(postPage.getCurrent(), postPage.getSize(), postPage.getTotal());
-        if (CollUtil.isEmpty(postList)) {
-            return postVOPage;
-        }
-        // 1. 关联查询用户信息
-        Set<Long> userIdSet = postList.stream().map(Post::getUserId).collect(Collectors.toSet());
-        Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
-                .collect(Collectors.groupingBy(User::getId));
-        // 2. 已登录，获取用户点赞、收藏状态
-        Map<Long, Boolean> postIdHasThumbMap = new HashMap<>();
-        Map<Long, Boolean> postIdHasFavourMap = new HashMap<>();
-        User loginUser = userService.getLoginUserPermitNull(request);
-        if (loginUser != null) {
-            Set<Long> postIdSet = postList.stream().map(Post::getId).collect(Collectors.toSet());
-            loginUser = userService.getLoginUser(request);
-            // loginUser = UserContext.getUser();
-            // 获取点赞
-            QueryWrapper<PostThumb> postThumbQueryWrapper = new QueryWrapper<>();
-            postThumbQueryWrapper.in("post_id", postIdSet);
-            postThumbQueryWrapper.eq("user_id", loginUser.getId());
-            List<PostThumb> postPostThumbList = postThumbMapper.selectList(postThumbQueryWrapper);
-            postPostThumbList.forEach(postPostThumb -> postIdHasThumbMap.put(postPostThumb.getPostId(), true));
-            // 获取收藏
-            QueryWrapper<PostFavour> postFavourQueryWrapper = new QueryWrapper<>();
-            postFavourQueryWrapper.in("post_id", postIdSet);
-            postFavourQueryWrapper.eq("user_id", loginUser.getId());
-            List<PostFavour> postFavourList = postFavourMapper.selectList(postFavourQueryWrapper);
-            postFavourList.forEach(postFavour -> postIdHasFavourMap.put(postFavour.getPostId(), true));
-        }
-        // 填充信息
-        List<PostVO> postVOList = postList.stream().map(post -> {
-            PostVO postVO = PostVO.objToVo(post);
-            Long userId = post.getUserId();
-            User user = null;
-            if (userIdUserListMap.containsKey(userId)) {
-                user = userIdUserListMap.get(userId).get(0);
-            }
-            postVO.setUser(userService.getUserVO(user));
-            postVO.setHasThumb(postIdHasThumbMap.getOrDefault(post.getId(), false));
-            postVO.setHasFavour(postIdHasFavourMap.getOrDefault(post.getId(), false));
-            return postVO;
-        }).collect(Collectors.toList());
-        postVOPage.setRecords(postVOList);
-        return postVOPage;
     }
 
     @Override
@@ -186,6 +108,161 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 .setSql("page_view = page_view + 1")
                 .eq(Post::getId, postId)
                 .update();
+    }
+
+    @Override
+    public boolean incrementThumbCount(long postId) {
+        return lambdaUpdate()
+                .setSql("thumbNum = thumbNum + 1")
+                .eq(Post::getId, postId)
+                .update();
+    }
+
+    @Override
+    public boolean decrementThumbCount(long postId) {
+        return lambdaUpdate()
+                .setSql("thumbNum = thumbNum - 1")
+                .eq(Post::getId, postId)
+                .gt(Post::getThumbNum, 0)
+                .update();
+    }
+
+    @Override
+    public boolean incrementFavourNum(long postId) {
+        return lambdaUpdate()
+                .setSql("favourNum = favourNum - 1")
+                .eq(Post::getId, postId)
+                .gt(Post::getThumbNum, 0)
+                .update();
+    }
+
+    @Override
+    public boolean decrementFavourNum(long postId) {
+        return lambdaUpdate()
+                .setSql("favourNum = favourNum - 1")
+                .eq(Post::getId, postId)
+                .gt(Post::getThumbNum, 0)
+                .update();
+    }
+
+    @Override
+    public Boolean deleteById(Long id) {
+        Post post = getById(id);
+        if (post == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        return removeById(id);
+    }
+
+    @Override
+    public Boolean update(PostUpdateRequest postUpdateRequest) {
+        Post post = postUpdateRequest.toEntity(postUpdateRequest);
+
+        // 参数校验
+        validPost(post);
+
+        // 判断是否存在
+        Post oldPost = getById(postUpdateRequest.getId());
+        ThrowUtils.throwIf(oldPost == null, ErrorCode.NOT_FOUND_ERROR);
+
+        return updateById(post);
+    }
+
+    @Override
+    public Page<Post> page(String searchKey, List<String> tags, Long userId, long current, long size) {
+        LambdaQueryWrapper<Post> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Post::getUserId, userId);
+        queryWrapper.like(Post::getTitle, searchKey);
+        // TODO Tag单独处理
+         return page(new Page<>(current, size), queryWrapper);
+    }
+
+    /**
+     * 帖子收藏
+     */
+    @Override
+    public boolean doFavour(long postId) {
+        // 判断是否存在
+        Post post = getById(postId);
+        if (post == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 是否已帖子收藏
+        Long loginUserId = UserContext.getUser().getId();
+        PostFavour postFavour = postFavourRepository.getFavourRecord(postId, loginUserId);
+        if (null == postFavour) {
+            // 未帖子收藏，进行收藏
+            postFavourRepository.addFavourRecord(postId, loginUserId);
+            // 帖子收藏数 + 1
+            incrementFavourNum(postId);
+        } else {
+            // 已帖子收藏，进行取消收藏
+            postFavourRepository.removeFavourRecord(postId, loginUserId);
+            // 帖子收藏数 - 1
+            decrementFavourNum(postId);
+        }
+        return true;
+    }
+
+    @Override
+    public Page<PostVO> pageMyFavour(int current, int pageSize) {
+        Long loginUserId = UserContext.getUser().getId();
+        Page<PostFavour> postFavourPage = postFavourRepository.page(loginUserId, current, pageSize);
+        List<Post> postList = listByIds(postFavourPage.getRecords().stream()
+                .map(PostFavour::getPostId)
+                .collect(Collectors.toSet()));
+
+        Map<Long, Post> postMap = postList.stream().collect(Collectors.toMap(Post::getId, Function.identity()));
+
+        return PageUtil.convertToVO(postFavourPage, postFavour -> {
+            Post post = postMap.get(postFavour.getPostId());
+            return PostVO.convertToVo(post);
+        });
+    }
+
+    /**
+     * 点赞
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean doThumb(long postId) {
+        long userId = UserContext.getUser().getId();
+        // 判断帖子是否存在
+        Post post = getById(postId);
+        if (post == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 判断是否点赞过
+        PostThumb postThumb = postThumbRepository.getThumbPostByUserId(postId, userId);
+        if (postThumb == null) {
+            // ==> 未点赞，执行点赞
+            postThumbRepository.addPostThumb(userId, postId);
+            // 点赞数 + 1
+            incrementThumbCount(postId);
+        }
+        else {
+            // ==> 已点赞，执行取消点赞
+            postThumbRepository.removePostThumb(userId, postId);
+            // 点赞数 - 1
+            decrementThumbCount(postId);
+        }
+        return true;
+    }
+
+    /**
+     * 校验帖子参数
+     */
+    private void validPost(Post post) {
+        if (post == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (post.getId() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "帖子ID不能为空");
+        }
+        String title = post.getTitle();
+        String content = post.getContent();
+        ThrowUtils.throwIf(StringUtils.isBlank(title) || title.length() > 100, ErrorCode.PARAMS_ERROR, "标题不能为空且长度不能超过100");
+        ThrowUtils.throwIf(StringUtils.isBlank(content) || content.length() > 2048, ErrorCode.PARAMS_ERROR, "内容不能为空且长度不能超过2048");
     }
 
 }

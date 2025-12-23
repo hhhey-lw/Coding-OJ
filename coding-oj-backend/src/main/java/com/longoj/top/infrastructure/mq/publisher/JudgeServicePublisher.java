@@ -2,10 +2,10 @@ package com.longoj.top.infrastructure.mq.publisher;
 
 import cn.hutool.json.JSONUtil;
 import com.longoj.top.infrastructure.config.JudgeMQConfig;
-import com.longoj.top.domain.entity.MqLocalMessage;
+import com.longoj.top.domain.entity.LocalMessage;
 import com.longoj.top.domain.entity.QuestionSubmit;
 import com.longoj.top.domain.entity.enums.MQMessageStatusEnum;
-import com.longoj.top.domain.service.MqLocalMessageService;
+import com.longoj.top.domain.service.LocalMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -24,7 +24,7 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
     private RabbitTemplate rabbitTemplate;
 
     @Resource
-    private MqLocalMessageService mqLocalMessageService;
+    private LocalMessageService localMessageService;
 
     public void sendDoJudgeMessage(QuestionSubmit questionSubmit) {
         // 这里可以添加测试代码来验证 RabbitMQ 的连接和功能
@@ -33,14 +33,14 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
 
         String msg = JSONUtil.toJsonStr(questionSubmit);
         // 先存本地方法表
-        MqLocalMessage mqLocalMessage = new MqLocalMessage();
-        mqLocalMessage.setMessageId(MSG_KEY_PREFIX + questionSubmit.getId());
-        mqLocalMessage.setExchangeName(JudgeMQConfig.EXCHANGE_NAME);
-        mqLocalMessage.setRoutingKey(JudgeMQConfig.ROUTING_KEY);
-        mqLocalMessage.setPayload(msg);
-        mqLocalMessage.setStatus(MQMessageStatusEnum.PENDING); // 0-待发送
-        mqLocalMessage.setRetryCount(0);
-        mqLocalMessageService.save(mqLocalMessage);
+        LocalMessage localMessage = new LocalMessage();
+        localMessage.setMessageId(MSG_KEY_PREFIX + questionSubmit.getId());
+        localMessage.setExchangeName(JudgeMQConfig.EXCHANGE_NAME);
+        localMessage.setRoutingKey(JudgeMQConfig.ROUTING_KEY);
+        localMessage.setPayload(msg);
+        localMessage.setStatus(MQMessageStatusEnum.PENDING); // 0-待发送
+        localMessage.setRetryCount(0);
+        localMessageService.save(localMessage);
 
         // 发送消息到 RabbitMQ 队列
         CorrelationData correlationData = new CorrelationData();
@@ -73,17 +73,17 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
         String id = correlationData != null ? correlationData.getId() : "";
         if (ack) {
             log.info("ConfirmCallback: 消息发送成功, id: {}", id);
-            mqLocalMessageService.lambdaUpdate()
-                    .set(MqLocalMessage::getStatus, MQMessageStatusEnum.SUCCESS)
-                    .eq(MqLocalMessage::getMessageId, correlationData.getId())
+            localMessageService.lambdaUpdate()
+                    .set(LocalMessage::getStatus, MQMessageStatusEnum.SUCCESS)
+                    .eq(LocalMessage::getMessageId, correlationData.getId())
                     .update();
         } else {
             log.error("ConfirmCallback: 消息发送失败, id: {}, 原因: {}", id, cause);
             // 在这里处理消息发送失败的逻辑，例如记录日志、重试、告警等
-            mqLocalMessageService.lambdaUpdate()
-                    .set(MqLocalMessage::getStatus, MQMessageStatusEnum.FAILED)
-                    .set(MqLocalMessage::getErrorCause, cause)
-                    .eq(MqLocalMessage::getMessageId, correlationData.getId())
+            localMessageService.lambdaUpdate()
+                    .set(LocalMessage::getStatus, MQMessageStatusEnum.FAILED)
+                    .set(LocalMessage::getErrorCause, cause)
+                    .eq(LocalMessage::getMessageId, correlationData.getId())
                     .update();
         }
     }
@@ -106,10 +106,10 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
                 returned.getRoutingKey());
         // 在这里处理被退回消息的逻辑，例如记录日志、发送到备用队列、告警等
         String correlationId = returned.getMessage().getMessageProperties().getCorrelationId();
-        mqLocalMessageService.lambdaUpdate()
-                .set(MqLocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED)
-                .set(MqLocalMessage::getErrorCause, returned.getReplyCode())
-                .eq(MqLocalMessage::getMessageId, correlationId)
+        localMessageService.lambdaUpdate()
+                .set(LocalMessage::getStatus, MQMessageStatusEnum.FINAL_FAILED)
+                .set(LocalMessage::getErrorCause, returned.getReplyCode())
+                .eq(LocalMessage::getMessageId, correlationId)
                 .update();
     }
 

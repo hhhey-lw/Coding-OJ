@@ -32,8 +32,15 @@ public class PostVO implements Serializable {
      */
     private String content;
 
+    /**
+     * 评论数
+     */
     private Integer commentNum;
-    private Integer pageView;
+
+    /**
+     * 浏览数
+     */
+    private Integer viewNum;
 
     /**
      * 点赞数
@@ -73,42 +80,32 @@ public class PostVO implements Serializable {
     /**
      * 是否已点赞
      */
-    private Boolean hasThumb;
+    private Boolean isThumb;
 
     /**
      * 是否已收藏
      */
-    private Boolean hasFavour;
+    private Boolean isFavour;
 
     /**
-     * 包装类转对象
-     *
-     * @param postVO
-     * @return
+     * 对象转换为VO对象
      */
-    public static Post voToObj(PostVO postVO) {
-        if (postVO == null) {
-            return null;
-        }
-        Post post = new Post();
-        BeanUtils.copyProperties(postVO, post);
-        List<String> tagList = postVO.getTagList();
-        post.setTags(JSONUtil.toJsonStr(tagList));
-        return post;
-    }
-
-    /**
-     * 对象转包装类
-     *
-     * @param post
-     * @return
-     */
-    public static PostVO objToVo(Post post) {
+    public static PostVO convertToVo(Post post) {
         if (post == null) {
             return null;
         }
         PostVO postVO = new PostVO();
-        BeanUtils.copyProperties(post, postVO);
+        postVO.setId(post.getId());
+        postVO.setTitle(post.getTitle());
+        postVO.setContent(post.getContent());
+        postVO.setCommentNum(post.getCommentNum());
+        postVO.setViewNum(post.getViewNum());
+        postVO.setThumbNum(post.getThumbNum());
+        postVO.setFavourNum(post.getFavourNum());
+        postVO.setUserId(post.getUserId());
+        postVO.setCreateTime(post.getCreateTime());
+        postVO.setUpdateTime(post.getUpdateTime());
+        // TODO 是否点赞和收藏单独处理
         postVO.setTagList(JSONUtil.toList(post.getTags(), String.class));
         return postVO;
     }

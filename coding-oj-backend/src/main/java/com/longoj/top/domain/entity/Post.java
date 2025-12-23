@@ -49,7 +49,7 @@ public class Post implements Serializable {
     /**
      * 浏览数
      */
-    private Integer pageView;
+    private Integer viewNum;
 
     /**
      * 点赞数

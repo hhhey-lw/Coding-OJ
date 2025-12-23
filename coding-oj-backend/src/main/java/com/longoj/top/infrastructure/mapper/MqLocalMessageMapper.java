@@ -1,6 +1,6 @@
 package com.longoj.top.infrastructure.mapper;
 
-import com.longoj.top.domain.entity.MqLocalMessage;
+import com.longoj.top.domain.entity.LocalMessage;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2025-06-15 21:05:24
 * @Entity com.longoj.top.model.entity.MqLocalMessage
 */
-public interface MqLocalMessageMapper extends BaseMapper<MqLocalMessage> {
+public interface MqLocalMessageMapper extends BaseMapper<LocalMessage> {
 
 }
 

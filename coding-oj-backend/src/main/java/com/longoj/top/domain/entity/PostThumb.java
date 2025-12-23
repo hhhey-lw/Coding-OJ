@@ -4,8 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+
+import io.swagger.models.auth.In;
 import lombok.Data;
 
 /**
@@ -42,6 +46,26 @@ public class PostThumb implements Serializable {
      */
     private Date updateTime;
 
+    /**
+     * 是否删除
+     */
+    private Integer isDelete;
+
     @TableField(exist = false)
+    @Serial
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 构建实体
+     */
+    public static PostThumb buildEntity(long userId, long postId) {
+        PostThumb postThumb = new PostThumb();
+        postThumb.setUserId(userId);
+        postThumb.setPostId(postId);
+        postThumb.setIsDelete(0);
+        Date now = new Date();
+        postThumb.setCreateTime(now);
+        postThumb.setUpdateTime(now);
+        return postThumb;
+    }
 }

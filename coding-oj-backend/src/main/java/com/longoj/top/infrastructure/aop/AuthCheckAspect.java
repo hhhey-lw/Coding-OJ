@@ -7,14 +7,14 @@ import com.longoj.top.domain.entity.User;
 import com.longoj.top.domain.entity.enums.UserRoleEnum;
 import com.longoj.top.domain.service.UserService;
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+
+import com.longoj.top.infrastructure.utils.UserContext;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * 权限校验 AOP
@@ -24,31 +24,21 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component
 public class AuthCheckAspect {
 
-    @Resource
-    private UserService userService;
-
     /**
      * 执行拦截
-     *
-     * @param joinPoint
-     * @param authCheck
-     * @return
      */
     @Around("@annotation(authCheck)")
     public Object doInterceptor(ProceedingJoinPoint joinPoint, AuthCheck authCheck) throws Throwable {
         String mustRole = authCheck.mustRole();
-        RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
-        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
         // 当前登录用户
-        User loginUser = userService.getLoginUser(request);
-        // User loginUser = UserContext.getUser();
-        UserRoleEnum mustRoleEnum = UserRoleEnum.getEnumByValue(mustRole);
+        User loginUser = UserContext.getUser();
+        UserRoleEnum mustRoleEnum = UserRoleEnum.getByCode(mustRole);
         // 不需要权限，放行
         if (mustRoleEnum == null) {
             return joinPoint.proceed();
         }
         // 必须有该权限才通过
-        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
+        UserRoleEnum userRoleEnum = UserRoleEnum.getByCode(loginUser.getUserRole());
         if (userRoleEnum == null) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }

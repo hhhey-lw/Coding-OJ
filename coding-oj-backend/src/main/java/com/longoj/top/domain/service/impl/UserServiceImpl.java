@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.longoj.top.controller.dto.user.UserAddRequest;
+import com.longoj.top.domain.entity.enums.UserRoleEnum;
 import com.longoj.top.domain.repository.UserRepository;
 import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.exception.BusinessException;
@@ -133,6 +134,5 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public Page<User> page(String userName, String userRole, int current, int pageSize) {
         return userRepository.page(userName, userRole, current, pageSize);
     }
-
 
 }
