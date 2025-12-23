@@ -40,16 +40,11 @@ public interface QuestionService extends IService<Question> {
     /**
      * 分页查询
      */
-    Page<Question>  page(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize);
+    Page<Question>  page(String searchKey, Integer difficulty, List<String> tags, int current, int pageSize);
     /**
      * 分页查询
      */
-    Page<QuestionVO>  pageVO(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize);
-
-    /**
-     * 更新题目信息
-     */
-    Boolean update(QuestionUpdateRequest questionUpdateRequest);
+    Page<QuestionVO>  pageVO(String searchKey, Integer difficulty, List<String> tags, int current, int pageSize);
 
     /**
      * 更新题目提交数

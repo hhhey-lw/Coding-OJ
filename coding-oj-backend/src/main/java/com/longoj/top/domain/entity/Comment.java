@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.longoj.top.controller.dto.post.CommentAddRequest;
+import com.longoj.top.infrastructure.utils.UserContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -85,9 +86,8 @@ public class Comment {
         return Comment.builder()
                 .likeCount(0)
                 .isDelete(0)
-                .status(commentAddRequest.getStatus())
                 .postId(commentAddRequest.getPostId())
-                .userId(commentAddRequest.getUserId())
+                .userId(UserContext.getUser().getId())
                 .parentId(commentAddRequest.getParentId())
                 .rootCommentId(commentAddRequest.getRootCommentId())
                 .content(commentAddRequest.getContent())

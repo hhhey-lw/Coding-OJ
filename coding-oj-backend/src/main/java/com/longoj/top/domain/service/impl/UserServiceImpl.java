@@ -1,10 +1,8 @@
 package com.longoj.top.domain.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.longoj.top.controller.dto.user.UserAddRequest;
-import com.longoj.top.domain.entity.enums.UserRoleEnum;
 import com.longoj.top.domain.repository.UserRepository;
 import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.exception.BusinessException;
@@ -22,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.longoj.top.infrastructure.utils.UserContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -106,7 +103,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public boolean updateUserPwd(String oldPwd, String newPwd) {
+    public boolean updateUserPwd(String oldPwd, String newPwd, String confirmNewPwd) {
+        if (!newPwd.equals(confirmNewPwd)) {
+            throw new BusinessException("两次输入的新密码不一致");
+        }
+
         User loginUser = UserContext.getUser();
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + oldPwd).getBytes());
         String newPasswordSALT = DigestUtils.md5DigestAsHex((SALT + newPwd).getBytes());
@@ -121,7 +122,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Boolean updateUserInfo(String userName, String userAvatar, String userProfile) {
-        return null;
+        User loginUser = User.buildEntity(UserContext.getUser().getId(), userName, userAvatar, userProfile);
+        return updateById(loginUser);
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.longoj.top.domain.entity.enums.QuestionPassStatusEnum;
 import com.longoj.top.domain.entity.enums.QuestionSubmitStatusEnum;
 import com.longoj.top.domain.repository.QuestionSubmitRepository;
 import com.longoj.top.infrastructure.mapper.QuestionSubmitMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
@@ -32,12 +33,28 @@ public class QuestionSubmitRepositoryImpl implements QuestionSubmitRepository {
     @Override
     public Page<QuestionSubmit> page(String language, Integer questionId, Long userId, QuestionSubmitStatusEnum status, int current, int pageSize) {
         LambdaQueryWrapper<QuestionSubmit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(QuestionSubmit::getUserId, userId);
+        queryWrapper.eq(userId != null, QuestionSubmit::getUserId, userId);
         queryWrapper.eq(QuestionSubmit::getIsDelete, Boolean.FALSE);
-        queryWrapper.eq(QuestionSubmit::getLanguage, language);
-        queryWrapper.eq(QuestionSubmit::getQuestionId, questionId);
-        queryWrapper.eq(QuestionSubmit::getStatus, status.getCode());
+        queryWrapper.eq(StringUtils.isNotBlank(language), QuestionSubmit::getLanguage, language);
+        queryWrapper.eq(questionId != null, QuestionSubmit::getQuestionId, questionId);
+        if (status != null) {
+            queryWrapper.eq(QuestionSubmit::getStatus, status.getCode());
+        }
 
         return questionSubmitMapper.selectPage(new Page<>(current, pageSize), queryWrapper);
     }
+
+    @Override
+    public Page<QuestionSubmit> page(String language, Integer questionId, QuestionSubmitStatusEnum status, int current, int pageSize) {
+        LambdaQueryWrapper<QuestionSubmit> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(QuestionSubmit::getIsDelete, Boolean.FALSE);
+        queryWrapper.eq(StringUtils.isNotBlank(language), QuestionSubmit::getLanguage, language);
+        queryWrapper.eq(questionId != null, QuestionSubmit::getQuestionId, questionId);
+        if (status != null) {
+            queryWrapper.eq(QuestionSubmit::getStatus, status.getCode());
+        }
+
+        return questionSubmitMapper.selectPage(new Page<>(current, pageSize), queryWrapper);
+    }
+
 }

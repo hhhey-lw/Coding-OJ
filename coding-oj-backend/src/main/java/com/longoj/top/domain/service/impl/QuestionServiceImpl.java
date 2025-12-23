@@ -4,8 +4,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.longoj.top.domain.repository.QuestionRepository;
-import com.longoj.top.domain.repository.QuestionSubmitRepository;
-import com.longoj.top.domain.service.QuestionSubmitService;
+import com.longoj.top.domain.service.*;
 import com.longoj.top.infrastructure.exception.ErrorCode;
 import com.longoj.top.infrastructure.utils.PageUtil;
 import com.longoj.top.infrastructure.utils.RedisKeyUtil;
@@ -17,12 +16,10 @@ import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.controller.dto.question.QuestionVO;
 import com.longoj.top.controller.dto.user.UserVO;
-import com.longoj.top.domain.service.QuestionService;
 import com.longoj.top.infrastructure.mapper.QuestionMapper;
-import com.longoj.top.domain.service.QuestionTagService;
-import com.longoj.top.domain.service.UserService;
 import com.longoj.top.infrastructure.utils.UserContext;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +44,10 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Resource
     private QuestionTagService questionTagService;
 
+    @Resource
+    private TagService tagService;
+
+    @Lazy
     @Resource
     private QuestionSubmitService questionSubmitService;
 
@@ -168,25 +169,24 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     }
 
     @Override
-    public Page<QuestionVO> pageVO(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize) {
-        Page<Question> questionPage = questionRepository.page(searchKey, difficulty, tags, userId, current, pageSize);
-        Page<QuestionVO> questionVOPage = PageUtil.convertToVO(questionPage, QuestionVO::convertToVo);
-        User currentUser = UserContext.getUser();
-        questionVOPage.getRecords().forEach(questionVO -> {
-            questionVO.setPassed(isPassed(questionVO.getId(), currentUser.getId()));
+    public Page<QuestionVO> pageVO(String searchKey, Integer difficulty, List<String> tags, int current, int pageSize) {
+        List<Long> tagIds = tagService.batchQueryTagIdByTagName(tags);
+        Page<Question> questionPage = questionRepository.page(searchKey, difficulty, tagIds, current, pageSize);
+
+        User loginUser = UserContext.getUser();
+        Long userId = loginUser != null ? loginUser.getId() : null;
+
+        return PageUtil.convertToVO(questionPage, question -> {
+            QuestionVO questionVO = QuestionVO.convertToVo(question);
+            questionVO.setPassed(isPassed(questionVO.getId(), userId));
+            return questionVO;
         });
-        return questionVOPage;
     }
 
     @Override
-    public Page<Question> page(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize) {
-        return questionRepository.page(searchKey, difficulty, tags, userId, current, pageSize);
-    }
-
-    @Override
-    public Boolean update(QuestionUpdateRequest questionUpdateRequest) {
-        Question question = QuestionUpdateRequest.toEntity(questionUpdateRequest);
-        return updateById(question);
+    public Page<Question> page(String searchKey, Integer difficulty, List<String> tags, int current, int pageSize) {
+        List<Long> tagIds = tagService.batchQueryTagIdByTagName(tags);
+        return questionRepository.page(searchKey, difficulty, tagIds, current, pageSize);
     }
 
     /**

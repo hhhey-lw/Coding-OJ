@@ -29,7 +29,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                     "/v2/api-docs",
                     "/v3/api-docs",
                     "/swagger-ui/**",
-                    "/public/**"
-                ); // 排除登录注册等公开接口
+                    "/public/**",
+                    // 非登陆信息
+                    "/question/submit/topPassed/**",
+                    "/question/list/page/vo",
+                    "/question/submit/list/page"
+                );
     }
 }

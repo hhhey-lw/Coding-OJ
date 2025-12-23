@@ -105,7 +105,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public boolean incrementPageView(Long postId) {
         return lambdaUpdate()
-                .setSql("page_view = page_view + 1")
+                .setSql("view_num = view_num + 1")
                 .eq(Post::getId, postId)
                 .update();
     }
@@ -113,7 +113,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public boolean incrementThumbCount(long postId) {
         return lambdaUpdate()
-                .setSql("thumbNum = thumbNum + 1")
+                .setSql("thumb_num = thumb_num + 1")
                 .eq(Post::getId, postId)
                 .update();
     }
@@ -121,7 +121,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public boolean decrementThumbCount(long postId) {
         return lambdaUpdate()
-                .setSql("thumbNum = thumbNum - 1")
+                .setSql("thumb_num = thumb_num - 1")
                 .eq(Post::getId, postId)
                 .gt(Post::getThumbNum, 0)
                 .update();
@@ -130,7 +130,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public boolean incrementFavourNum(long postId) {
         return lambdaUpdate()
-                .setSql("favourNum = favourNum - 1")
+                .setSql("favour_num = favour_num - 1")
                 .eq(Post::getId, postId)
                 .gt(Post::getThumbNum, 0)
                 .update();
@@ -139,7 +139,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public boolean decrementFavourNum(long postId) {
         return lambdaUpdate()
-                .setSql("favourNum = favourNum - 1")
+                .setSql("favour_num = favour_num - 1")
                 .eq(Post::getId, postId)
                 .gt(Post::getThumbNum, 0)
                 .update();
@@ -169,11 +169,9 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Page<Post> page(String searchKey, List<String> tags, Long userId, long current, long size) {
+    public Page<Post> page(String searchKey, long current, long size) {
         LambdaQueryWrapper<Post> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Post::getUserId, userId);
         queryWrapper.like(Post::getTitle, searchKey);
-        // TODO Tag单独处理
          return page(new Page<>(current, size), queryWrapper);
     }
 
@@ -188,6 +186,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 是否已帖子收藏
+        boolean isFavour = false;
         Long loginUserId = UserContext.getUser().getId();
         PostFavour postFavour = postFavourRepository.getFavourRecord(postId, loginUserId);
         if (null == postFavour) {
@@ -195,19 +194,23 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             postFavourRepository.addFavourRecord(postId, loginUserId);
             // 帖子收藏数 + 1
             incrementFavourNum(postId);
+            isFavour = true;
         } else {
             // 已帖子收藏，进行取消收藏
             postFavourRepository.removeFavourRecord(postId, loginUserId);
             // 帖子收藏数 - 1
             decrementFavourNum(postId);
         }
-        return true;
+        return isFavour;
     }
 
     @Override
     public Page<PostVO> pageMyFavour(int current, int pageSize) {
         Long loginUserId = UserContext.getUser().getId();
         Page<PostFavour> postFavourPage = postFavourRepository.page(loginUserId, current, pageSize);
+        if (postFavourPage == null || CollUtil.isEmpty(postFavourPage.getRecords())) {
+            return PageUtil.emptyPage(current, pageSize);
+        }
         List<Post> postList = listByIds(postFavourPage.getRecords().stream()
                 .map(PostFavour::getPostId)
                 .collect(Collectors.toSet()));
@@ -227,6 +230,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Transactional(rollbackFor = Exception.class)
     public boolean doThumb(long postId) {
         long userId = UserContext.getUser().getId();
+        boolean isThumb = false;
         // 判断帖子是否存在
         Post post = getById(postId);
         if (post == null) {
@@ -239,6 +243,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             postThumbRepository.addPostThumb(userId, postId);
             // 点赞数 + 1
             incrementThumbCount(postId);
+            isThumb = true;
         }
         else {
             // ==> 已点赞，执行取消点赞
@@ -246,7 +251,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             // 点赞数 - 1
             decrementThumbCount(postId);
         }
-        return true;
+        return isThumb;
     }
 
     /**

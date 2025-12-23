@@ -30,7 +30,7 @@ public interface PostService extends IService<Post> {
     /**
      * 分页查询帖子
      */
-    Page<Post> page(String searchKey, List<String> tags, Long userId, long current, long size);
+    Page<Post> page(String searchKey, long current, long size);
 
     /**
      * 增加评论数

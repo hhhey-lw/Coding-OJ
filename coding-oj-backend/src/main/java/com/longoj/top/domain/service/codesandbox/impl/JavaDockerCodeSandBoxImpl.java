@@ -66,8 +66,13 @@ public class JavaDockerCodeSandBoxImpl extends AbstractJavaCodeSandBox {
     }
 
     @Override
-    protected String getCompileCommand(File codeFile) {
-        return String.format("%s -encoding utf-8 %s", JDK_PATH, codeFile.getAbsolutePath());
+    protected String[] getCompileCommand(File codeFile) {
+        return new String[]{
+                JDK_PATH,
+                "-encoding",
+                "utf-8",
+                codeFile.getAbsolutePath()
+        };
     }
 
     @Override

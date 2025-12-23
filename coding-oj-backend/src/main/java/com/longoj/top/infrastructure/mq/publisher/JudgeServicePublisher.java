@@ -7,6 +7,7 @@ import com.longoj.top.domain.entity.QuestionSubmit;
 import com.longoj.top.domain.entity.enums.MQMessageStatusEnum;
 import com.longoj.top.domain.service.LocalMessageService;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.core.ReturnedMessage;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,7 +19,7 @@ import javax.annotation.Resource;
 @Component
 public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, RabbitTemplate.ReturnsCallback {
 
-    private final String MSG_KEY_PREFIX = "judge:";
+    private final static String MSG_KEY_PREFIX = "judge:";
 
     @Resource
     private RabbitTemplate rabbitTemplate;
@@ -27,19 +28,12 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
     private LocalMessageService localMessageService;
 
     public void sendDoJudgeMessage(QuestionSubmit questionSubmit) {
-        // 这里可以添加测试代码来验证 RabbitMQ 的连接和功能
-        rabbitTemplate.setConfirmCallback(this); // 设置 ConfirmCallback
-        rabbitTemplate.setReturnsCallback(this); // 设置 ReturnsCallback
+        rabbitTemplate.setConfirmCallback(this);
+        rabbitTemplate.setReturnsCallback(this);
 
         String msg = JSONUtil.toJsonStr(questionSubmit);
         // 先存本地方法表
-        LocalMessage localMessage = new LocalMessage();
-        localMessage.setMessageId(MSG_KEY_PREFIX + questionSubmit.getId());
-        localMessage.setExchangeName(JudgeMQConfig.EXCHANGE_NAME);
-        localMessage.setRoutingKey(JudgeMQConfig.ROUTING_KEY);
-        localMessage.setPayload(msg);
-        localMessage.setStatus(MQMessageStatusEnum.PENDING); // 0-待发送
-        localMessage.setRetryCount(0);
+        LocalMessage localMessage = LocalMessage.buildMessageEntity(questionSubmit, MSG_KEY_PREFIX);
         localMessageService.save(localMessage);
 
         // 发送消息到 RabbitMQ 队列
@@ -48,6 +42,9 @@ public class JudgeServicePublisher implements RabbitTemplate.ConfirmCallback, Ra
         rabbitTemplate.convertAndSend(JudgeMQConfig.EXCHANGE_NAME, JudgeMQConfig.ROUTING_KEY, msg, correlationData);
     }
 
+    /**
+     * 重新发送消息
+     */
     public void retrySendJudgeMessage(String msg, Long id) {
         // 这里可以添加测试代码来验证 RabbitMQ 的连接和功能
         rabbitTemplate.setConfirmCallback(this); // 设置 ConfirmCallback

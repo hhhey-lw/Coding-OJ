@@ -6,6 +6,7 @@ import com.longoj.top.domain.entity.User;
 import com.longoj.top.domain.service.UserService;
 import com.longoj.top.infrastructure.utils.JwtTokenUtil;
 import com.longoj.top.infrastructure.utils.UserContext;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -21,14 +22,14 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        System.err.println("执行拦截器！");
         // 1. 获取请求头中的token
         String token = request.getHeader(JwtTokenUtil.tokenHeader);
-        if (token == null) {
+        if (StringUtils.isBlank(token)) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "未登录");
         }
         
         // 2. 解析token
+        token = token.replace("Bearer ", "");
         if (!JwtTokenUtil.validateToken(token)) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "token已过期");
         }
@@ -48,7 +49,7 @@ public class JwtInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, 
                                HttpServletResponse response, 
                                Object handler, Exception ex) {
-        // 请求完成后清除ThreadLocal中的用户信息，防止内存泄漏
+        // 请求完成后清除ThreadLocal中的用户信息
         UserContext.clear();
     }
 }

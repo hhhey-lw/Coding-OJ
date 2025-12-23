@@ -1,6 +1,8 @@
 package com.longoj.top.controller.dto.question;
 
 import cn.hutool.json.JSONUtil;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.longoj.top.controller.dto.user.UserVO;
 import com.longoj.top.domain.entity.dto.JudgeConfig;
 import com.longoj.top.domain.entity.Question;
@@ -9,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -52,11 +55,13 @@ public class QuestionVO implements Serializable {
     /**
      * 题目答案
      */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String answer;
 
     /**
      * 题目源码
      */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String sourceCode;
 
     /**
@@ -97,11 +102,13 @@ public class QuestionVO implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
 
     @Serial

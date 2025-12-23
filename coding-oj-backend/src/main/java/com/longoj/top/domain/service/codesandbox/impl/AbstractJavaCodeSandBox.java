@@ -90,7 +90,7 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
     /**
      * 获取编译命令
      */
-    protected abstract String getCompileCommand(File codeFile);
+    protected abstract String[] getCompileCommand(File codeFile);
 
     // ==================== 钩子方法（子类可选实现） ====================
 
@@ -152,7 +152,7 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
 
         // 3. 编译代码
         try {
-            String compileCmd = getCompileCommand(userCodeFile);
+            String[] compileCmd = getCompileCommand(userCodeFile);
             Process process = Runtime.getRuntime().exec(compileCmd);
             int exitCode = process.waitFor();
 

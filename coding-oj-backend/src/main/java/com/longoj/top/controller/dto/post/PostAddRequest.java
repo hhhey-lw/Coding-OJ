@@ -7,6 +7,7 @@ import java.util.List;
 
 import cn.hutool.json.JSONUtil;
 import com.longoj.top.domain.entity.Post;
+import com.longoj.top.infrastructure.utils.UserContext;
 import lombok.Data;
 
 /**
@@ -47,6 +48,7 @@ public class PostAddRequest implements Serializable {
         post.setViewNum(0);
         post.setThumbNum(0);
         post.setIsDelete(0);
+        post.setUserId(UserContext.getUser().getId());
         Date now = new Date();
         post.setCreateTime(now);
         post.setUpdateTime(now);

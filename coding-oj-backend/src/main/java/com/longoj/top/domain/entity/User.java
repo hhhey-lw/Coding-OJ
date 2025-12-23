@@ -13,6 +13,7 @@ import java.util.Date;
 import com.longoj.top.controller.dto.user.LoginUserVO;
 import com.longoj.top.controller.dto.user.UserVO;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * 用户
@@ -142,4 +143,21 @@ public class User implements Serializable {
         return user;
     }
 
+    /**
+     * 获取用户实体
+     */
+    public static User buildEntity(Long id, String userName, String userAvatar, String userProfile) {
+        User user = new User();
+        user.setId(id);
+        if (StringUtils.isNotBlank(userName)) {
+            user.setUserName(userName);
+        }
+        if (StringUtils.isNotBlank(userAvatar)) {
+            user.setUserAvatar(userAvatar);
+        }
+        if (StringUtils.isNotBlank(userProfile)) {
+            user.setUserProfile(userProfile);
+        }
+        return user;
+    }
 }

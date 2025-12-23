@@ -1,6 +1,8 @@
 package com.longoj.top.controller.dto.question;
 
 import com.longoj.top.controller.dto.PageRequest;
+import com.longoj.top.domain.entity.enums.QuestionSubmitLanguageEnum;
+import com.longoj.top.domain.entity.enums.QuestionSubmitStatusEnum;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -14,22 +16,17 @@ public class QuestionSubmitQueryRequest extends PageRequest implements Serializa
     /**
      * 编程语言
      */
-    private String language;
+    private QuestionSubmitLanguageEnum language;
 
     /**
      * 提交状态
      */
-    private Integer status;
+    private QuestionSubmitStatusEnum status;
 
     /**
      * 题目 ID
      */
     private Integer questionId;
-
-    /**
-     * 用户 ID
-     */
-    private Long userId;
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -8,6 +8,8 @@ import com.longoj.top.domain.entity.QuestionSubmit;
 import com.longoj.top.controller.dto.question.QuestionSubmitVO;
 import com.longoj.top.controller.dto.user.UserSubmitInfoVO;
 import com.longoj.top.domain.entity.enums.QuestionPassStatusEnum;
+import com.longoj.top.domain.entity.enums.QuestionSubmitLanguageEnum;
+import com.longoj.top.domain.entity.enums.QuestionSubmitStatusEnum;
 
 import java.util.List;
 
@@ -49,7 +51,7 @@ public interface QuestionSubmitService extends IService<QuestionSubmit> {
     /**
      * 分页查询我的提交记录
      */
-    Page<QuestionSubmitVO> pageMy(Integer questionId, Integer status, String language, int current, int pageSize);
+    Page<QuestionSubmitVO> pageMy(Integer questionId, QuestionSubmitStatusEnum status, QuestionSubmitLanguageEnum language, int current, int pageSize);
 
     /**
      * 修改提交的通过状态

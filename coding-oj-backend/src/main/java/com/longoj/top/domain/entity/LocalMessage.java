@@ -1,10 +1,16 @@
 package com.longoj.top.domain.entity;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
+
+import com.longoj.top.domain.entity.enums.MQMessageStatusEnum;
+import com.longoj.top.infrastructure.config.JudgeMQConfig;
 import lombok.Data;
 
 /**
@@ -61,6 +67,21 @@ public class LocalMessage implements Serializable {
     private Date updatedAt;
 
     @TableField(exist = false)
+    @Serial
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 构建本地消息实体
+     */
+    public static LocalMessage buildMessageEntity(QuestionSubmit questionSubmit, String msgPrefix) {
+        LocalMessage localMessage = new LocalMessage();
+        localMessage.setMessageId(msgPrefix + questionSubmit.getId());
+        localMessage.setExchangeName(JudgeMQConfig.EXCHANGE_NAME);
+        localMessage.setRoutingKey(JudgeMQConfig.ROUTING_KEY);
+        localMessage.setPayload(JSONUtil.toJsonStr(questionSubmit));
+        localMessage.setStatus(MQMessageStatusEnum.PENDING);
+        localMessage.setRetryCount(0);
+        return localMessage;
+    }
 
 }

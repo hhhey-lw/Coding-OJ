@@ -17,6 +17,7 @@ import com.longoj.top.domain.service.CommentService;
 import com.longoj.top.domain.service.PostService;
 import com.longoj.top.domain.service.UserService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +49,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         for (Comment comment : page.getRecords()) {
             // 封装一级评论
             CommentVO commentVO = CommentVO.toVO(comment);
-            commentVO.setUserVO(userMap.computeIfAbsent(commentVO.getUserId(), userId -> userService.getUserVOByUserId(userId)));
+            commentVO.setFromUser(userMap.computeIfAbsent(commentVO.getUserId(), userId -> userService.getUserVOByUserId(userId)));
 
             // 封装子评论
             List<Comment> childrenList = getCommentByRootCommentId(comment.getCommentId());
@@ -59,7 +60,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 commentVO.setReplies(childrenList.stream()
                         .map(c -> {
                             CommentVO cVO = CommentVO.toVO(c);
-                            cVO.setUserVO(userMap.computeIfAbsent(cVO.getUserId(), userId -> userService.getUserVOByUserId(userId)));
+                            cVO.setFromUser(userMap.computeIfAbsent(cVO.getUserId(), userId -> userService.getUserVOByUserId(userId)));
+                            cVO.setToUser(userMap.computeIfAbsent(commentVO.getUserId(), userId -> userService.getUserVOByUserId(userId)));
                             return cVO;
                         })
                         .collect(Collectors.toList()));
@@ -71,7 +73,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Throwable.class)
     public CommentVO addComment(CommentAddRequest commentAddRequest) {
         if (commentAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -84,6 +86,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         }
 
         Comment comment = Comment.buildComment(commentAddRequest);
+
+        // 设置根评论Id
+        Comment parentComment = null;
+        if (commentAddRequest.getParentId() != null) {
+            parentComment = getById(commentAddRequest.getParentId());
+            if (parentComment == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "父评论不存在");
+            }
+            comment.setRootCommentId(parentComment.getRootCommentId() == null ? parentComment.getCommentId() : parentComment.getRootCommentId());
+        }
         boolean save = save(comment);
         if (!save) {
             throw new BusinessException(ErrorCode.INSERT_ERROR);
@@ -93,7 +105,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         postService.incrementCommentCount(comment.getPostId());
 
         CommentVO commentVO = CommentVO.toVO(getById(comment.getCommentId()));
-        commentVO.setUserVO(userService.getUserVOByUserId(comment.getUserId()));
+        commentVO.setFromUser(userService.getUserVOByUserId(comment.getUserId()));
+        if (parentComment != null) {
+            commentVO.setToUser(userService.getUserVOByUserId(parentComment.getUserId()));
+        }
         return commentVO;
     }
 

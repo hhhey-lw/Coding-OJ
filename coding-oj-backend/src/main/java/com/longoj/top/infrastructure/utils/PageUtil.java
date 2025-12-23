@@ -1,6 +1,7 @@
 package com.longoj.top.infrastructure.utils;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.longoj.top.controller.dto.post.PostVO;
 
 import java.util.List;
 import java.util.function.Function;
@@ -24,4 +25,9 @@ public class PageUtil {
         return page;
     }
 
+    public static Page<PostVO> emptyPage(int current, int pageSize) {
+        Page<PostVO> page = new Page<>(current, pageSize, 0);
+        page.setRecords(List.of());
+        return page;
+    }
 }

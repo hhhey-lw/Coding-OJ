@@ -18,10 +18,64 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,language,code,
+        id,`language`,code,
         judge_info,status,question_id,
         user_id,create_time,update_time,
         is_delete
     </sql>
+
+    <!-- 从 question_submit 表直接统计用户通过数和提交数排行榜 -->
+    <select id="selectUserPassedCountsByTopNumber"
+            resultType="com.longoj.top.domain.entity.dto.UserPassedCountDTO">
+        SELECT
+            user_id AS userId,
+            -- 通过题目数（统计题目id不同的数量）
+            COUNT(DISTINCT CASE WHEN pass_status = 'ACCEPTED' THEN question_id END) AS passedCount,
+            -- 提交总数
+            COUNT(*) AS submitCount
+        FROM
+            question_submit
+        WHERE
+            is_delete = 0
+        GROUP BY
+            user_id
+        ORDER BY
+            passedCount DESC, submitCount DESC
+        LIMIT #{topNumber}
+    </select>
+
+    <!-- 查询用户某月每天的提交统计 -->
+    <select id="selectDailySubmitSummary"
+            resultType="com.longoj.top.controller.dto.user.UserSubmitSummaryVO">
+        SELECT
+            #{userId} AS userId,
+            DATE_FORMAT(create_time, '%Y-%m-%d') AS yearMonthDay,
+            COUNT(*) AS submitCount,
+            SUM(CASE WHEN pass_status = 'ACCEPTED' THEN 1 ELSE 0 END) AS acceptCount
+        FROM
+            question_submit
+        WHERE
+            user_id = #{userId}
+            AND is_delete = 0
+            AND DATE_FORMAT(create_time, '%Y-%m') = #{yearMonth}
+        GROUP BY
+            DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY
+            yearMonthDay
+    </select>
+
+    <!-- 查询用户某月有提交记录的日期列表（用于生成签到 bitmap） -->
+    <select id="selectSubmitDays" resultType="java.lang.Integer">
+        SELECT DISTINCT
+            DAY(create_time) AS day
+        FROM
+            question_submit
+        WHERE
+            user_id = #{userId}
+            AND is_delete = 0
+            AND DATE_FORMAT(create_time, '%Y-%m') = #{yearMonth}
+        ORDER BY
+            day
+    </select>
 
 </mapper>

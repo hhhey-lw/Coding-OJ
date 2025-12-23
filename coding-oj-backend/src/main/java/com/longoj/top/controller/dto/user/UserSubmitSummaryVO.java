@@ -14,11 +14,6 @@ public class UserSubmitSummaryVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 用户id
-     */
-    private Long userId;
-
-    /**
      * 日期，格式yyyy-MM-dd
      */
     private String yearMonthDay;
@@ -33,8 +28,4 @@ public class UserSubmitSummaryVO implements Serializable {
      */
     private Integer acceptCount;
 
-    /**
-     * 更新时间
-     */
-    private Date updateTime;
 }

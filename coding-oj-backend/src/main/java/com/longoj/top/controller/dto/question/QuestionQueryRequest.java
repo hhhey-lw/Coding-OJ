@@ -19,10 +19,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionQueryRequest extends PageRequest implements Serializable {
-    /**
-     * id
-     */
-    private Long id;
 
     /**
      * 搜索关键字：标题
@@ -38,11 +34,6 @@ public class QuestionQueryRequest extends PageRequest implements Serializable {
      * 难度
      */
     private Integer difficulty;
-
-    /**
-     * 创建用户 id
-     */
-    private Long userId;
 
     @Serial
     private static final long serialVersionUID = 1L;

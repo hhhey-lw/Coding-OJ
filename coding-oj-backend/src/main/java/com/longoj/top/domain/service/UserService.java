@@ -48,7 +48,7 @@ public interface UserService extends IService<User> {
     /**
      * 更新用户密码
      */
-    boolean updateUserPwd(String oldPwd, String newPwd);
+    boolean updateUserPwd(String oldPwd, String newPwd, String confirmNewPwd);
 
     /**
      * 更新用户信息

@@ -15,6 +15,7 @@ import com.longoj.top.domain.entity.constant.UserConstant;
 import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.domain.entity.Question;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +31,7 @@ import java.util.List;
  * 题目接口
  */
 @Slf4j
+@Api("题目接口")
 @RequestMapping("/question")
 @RestController
 public class QuestionController {
@@ -113,7 +115,7 @@ public class QuestionController {
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<Question>> listQuestionByPage(@RequestBody QuestionQueryRequest questionQueryRequest) {
-        return ResultUtils.success(questionService.page(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(), questionQueryRequest.getUserId(),
+        return ResultUtils.success(questionService.page(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(),
                 questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
 
@@ -123,23 +125,14 @@ public class QuestionController {
     @ApiOperation("分页获取题目封装列表")
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<QuestionVO>> listQuestionVOByPage(@RequestBody QuestionQueryRequest questionQueryRequest) {
-        return ResultUtils.success(questionService.pageVO(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(), questionQueryRequest.getUserId(),
+        return ResultUtils.success(questionService.pageVO(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(),
                 questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
     // endregion
 
-    /**
-     * 更新题目信息
-     */
-    @Deprecated
-    @ApiOperation("更新题目信息")
-    @PostMapping("/update/my")
-    public BaseResponse<Boolean> updateMyQuestion(@RequestBody QuestionUpdateRequest questionUpdateRequest) {
-        return ResultUtils.success(questionService.update(questionUpdateRequest));
-    }
-
     // ================> 题目标签相关接口 <================
 
+    @ApiOperation("根据标签分页查询题目列表")
     @GetMapping("/tag/id/{tagId}/{current}/{pageSize}")
     public BaseResponse<Page<QuestionVO>> getQuestionByTagId(@PathVariable(value = "tagId") Long tagId,
                                                              @PathVariable(value = "current") Long current,
@@ -147,6 +140,7 @@ public class QuestionController {
         return ResultUtils.success(questionTagService.pageQuestionByTagId(tagId, current, pageSize));
     }
 
+    @ApiOperation("分页查询标签列表")
     @GetMapping("/tag/queryTag/{current}/{pageSize}")
     public BaseResponse<Page<TagVO>> getTagByPage(@PathVariable(value = "current") Long current,
                                                   @PathVariable(value = "pageSize") Long pageSize) {
@@ -170,7 +164,7 @@ public class QuestionController {
         Long questionSubmitId = questionSubmitService.submit(questionSubmitAddRequest);
 
         // 更新用户当天签到和每日提交统计
-        userCheckInService.checkInOfLoginUser();
+        userCheckInService.updateUserCheckInByOneDay();
         // 更新题目提交数
         questionService.updateQuestionSubmitNum(questionSubmitAddRequest.getQuestionId());
 
@@ -184,7 +178,7 @@ public class QuestionController {
         return ResultUtils.success(questionSubmitService.pageQuery(questionSubmitQueryRequest));
     }
 
-    @ApiOperation("分页查询用户自己提交问题")
+    @ApiOperation("分页查询我的提交")
     @PostMapping("/submit/list/page/user")
     public BaseResponse<Page<QuestionSubmitVO>> listUserQuestionSubmitByPage(@RequestBody QuestionSubmitQueryRequest questionSubmitQueryRequest) {
         int current = questionSubmitQueryRequest.getCurrent();

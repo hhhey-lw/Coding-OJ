@@ -2,12 +2,15 @@ package com.longoj.top.infrastructure.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.longoj.top.domain.entity.Post;
+import org.apache.ibatis.annotations.Mapper;
+
 import java.util.Date;
 import java.util.List;
 
 /**
  * 帖子数据库操作
  */
+@Mapper
 public interface PostMapper extends BaseMapper<Post> {
 
     /**

@@ -10,7 +10,6 @@ import com.longoj.top.domain.entity.dto.ExecuteCodeRequest;
 import com.longoj.top.domain.entity.dto.ExecuteCodeResponse;
 import com.longoj.top.domain.entity.dto.JudgeContext;
 import com.longoj.top.domain.service.codesandbox.JudgeService;
-import com.longoj.top.infrastructure.mapper.UserSubmitSummaryMapper;
 import com.longoj.top.domain.entity.dto.JudgeCase;
 import com.longoj.top.domain.entity.dto.JudgeInfo;
 import com.longoj.top.domain.entity.Question;
@@ -21,7 +20,6 @@ import com.longoj.top.domain.service.QuestionService;
 import com.longoj.top.domain.service.QuestionSubmitService;
 import com.longoj.top.domain.strategy.DefaultJudgeStrategy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
@@ -30,16 +28,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//
 @Slf4j
 @Service
 public class JudgeServiceImpl implements JudgeService {
+
+    private final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     @Lazy
     @Resource
@@ -49,9 +50,7 @@ public class JudgeServiceImpl implements JudgeService {
     private QuestionService questionService;
 
     @Resource
-    private UserSubmitSummaryMapper userSubmitSummaryMapper;
-
-    private final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private ApplicationContext applicationContext;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -60,7 +59,7 @@ public class JudgeServiceImpl implements JudgeService {
     private String CODE_SANDBOX_TYPE;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Throwable.class)
     public JudgeInfo doJudge(QuestionSubmit questionSubmit) {
         // 1. 信息检查
         if (questionSubmit == null) {
@@ -79,10 +78,7 @@ public class JudgeServiceImpl implements JudgeService {
 
         // =============
         // 2. 更新提交状态
-        QuestionSubmit updateObj = new QuestionSubmit();
-        updateObj.setId(questionSubmit.getId());
-        updateObj.setStatus(QuestionSubmitStatusEnum.RUNNING.getCode());
-        boolean update = questionSubmitService.updateById(updateObj);
+        boolean update = questionSubmitService.updateById(QuestionSubmit.buildEntity(questionSubmit.getId(), QuestionSubmitStatusEnum.RUNNING));
         if (!update) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "提交状态更新失败");
         }
@@ -115,12 +111,12 @@ public class JudgeServiceImpl implements JudgeService {
         JudgeInfo judgeInfo = new DefaultJudgeStrategy().doJudge(judgeContext);
         log.debug(JSONUtil.toJsonStr(judgeInfo));
         // 5. 修改数据库中的判题结果
-        updateObj = QuestionSubmit.builder()
+        QuestionSubmit updateEntity = QuestionSubmit.builder()
                 .id(questionSubmit.getId())
                 .status(QuestionSubmitStatusEnum.SUCCESS.getCode())
                 .judgeInfo(JSONUtil.toJsonStr(judgeInfo))
                 .build();
-        boolean updated = questionSubmitService.updateById(updateObj);
+        boolean updated = questionSubmitService.updateById(updateEntity);
         if (!updated) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "提交状态更新失败");
         }
@@ -128,23 +124,22 @@ public class JudgeServiceImpl implements JudgeService {
         // 6. 修改每日提交汇总，通过数
         try {
             Date submitCreateTime = questionSubmit.getCreateTime();
-            String format = submitCreateTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DATE_TIME_FORMATTER);
+            LocalDate submitDate = submitCreateTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            String yearMonth = submitDate.format(YEAR_MONTH_FORMATTER);
+
             if (judgeInfo.getMessage().equals(JudgeInfoMessageEnum.ACCEPTED.getValue())) {
-                // 更新每日提交汇总
-                userSubmitSummaryMapper.updateSubmitSummary(questionSubmit.getUserId(), format, 0, 1);
+                // 删除缓存，下次读取时重建
+                deleteSubmitCache(questionSubmit.getUserId(), yearMonth);
                 // 更新题目通过数
                 questionService.updateQuestionAcceptedNum(question.getId());
                 // 更新用户通过的题目
                 questionSubmitService.updatePassStatus(questionSubmit.getId(), QuestionPassStatusEnum.ACCEPTED);
-                // 删除缓存
-                stringRedisTemplate.delete(RedisKeyUtil.getUserPassedQuestionKey(questionSubmit.getUserId()));
             } else {
                 // 标记提交的通过状态
                 questionSubmitService.updatePassStatus(questionSubmit.getId(), QuestionPassStatusEnum.FAILED);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            log.debug("修改每日提交汇总，通过数 失败");
+            log.error("修改每日提交汇总，通过数 失败", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "修改每日提交汇总，通过数 失败");
         }
         return judgeInfo;
@@ -171,9 +166,26 @@ public class JudgeServiceImpl implements JudgeService {
         }
     }
 
-    @Autowired
-    private ApplicationContext applicationContext;
+    /**
+     * 删除提交相关的 Redis 缓存（Cache-Aside 模式）
+     */
+    private void deleteSubmitCache(Long userId, String yearMonth) {
+        try {
+            String submitKey = RedisKeyUtil.getUserSubmitDailyKey(userId, yearMonth);
+            String passedKey = RedisKeyUtil.getUserPassedQuestionKey(userId);
 
+            stringRedisTemplate.delete(submitKey);
+            stringRedisTemplate.delete(passedKey);
+
+            log.debug("已删除用户 {} 提交相关缓存", userId);
+        } catch (Exception e) {
+            log.warn("删除 Redis 缓存失败（不影响业务）: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 根据类型获取代码沙箱实现
+     */
     private CodeSandBox getCodeSandBox(String type) {
         switch (type) {
             case "native":

@@ -19,21 +19,6 @@ public class PostQueryRequest extends PageRequest implements Serializable {
      */
     private String searchKey;
 
-    /**
-     * 标签列表
-     */
-    private List<String> tags;
-
-    /**
-     * 创建用户 id
-     */
-    private Long userId;
-
-    /**
-     * 收藏用户 id
-     */
-    private Long favourUserId;
-
     @Serial
     private static final long serialVersionUID = 1L;
 }

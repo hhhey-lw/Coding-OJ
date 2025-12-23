@@ -36,8 +36,13 @@ public class JavaNativeCodeSandBoxImpl extends AbstractJavaCodeSandBox {
     }
 
     @Override
-    protected String getCompileCommand(File codeFile) {
-        return String.format("javac -encoding utf-8 %s", codeFile.getAbsolutePath());
+    protected String[] getCompileCommand(File codeFile) {
+        return new String[] {
+                "javac",
+                "-encoding",
+                "utf-8",
+                codeFile.getAbsolutePath()
+        };
     }
 
     @Override
@@ -82,14 +87,18 @@ public class JavaNativeCodeSandBoxImpl extends AbstractJavaCodeSandBox {
      * 构建执行命令
      */
     private String[] buildExecutionCommand(File codeFile, File inputDataFile) {
-        String javaCmd = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp %s Main < %s",
-                codeFile.getParentFile().getAbsolutePath(),
-                inputDataFile.getAbsolutePath());
+        // 获取路径并处理可能包含空格的情况
+        String classPath = codeFile.getParentFile().getAbsolutePath();
+        String inputPath = inputDataFile.getAbsolutePath();
+
+        // 构建Java执行命令字符串，对包含空格的路径添加引号
+        String javaCmdStr = String.format("java -Xmx256m -Dfile.encoding=UTF-8 -cp \"%s\" Main < \"%s\"",
+                classPath, inputPath);
 
         if ("windows".equals(cmdOSType)) {
-            return new String[]{"cmd.exe", "/c", javaCmd};
+            return new String[]{"cmd.exe", "/c", javaCmdStr};
         } else {
-            return new String[]{"/bin/sh", "-c", javaCmd};
+            return new String[]{"/bin/sh", "-c", javaCmdStr};
         }
     }
 

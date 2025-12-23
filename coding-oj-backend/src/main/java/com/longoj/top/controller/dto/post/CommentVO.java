@@ -1,6 +1,7 @@
 package com.longoj.top.controller.dto.post;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.longoj.top.domain.entity.Comment;
 import com.longoj.top.controller.dto.user.UserVO;
 import lombok.Data;
@@ -21,11 +22,17 @@ public class CommentVO {
     private Long postId;
     /** 评论用户ID */
     private Long userId;
-
-    private UserVO userVO;
+    /** 评论用户信息 */
+    private UserVO fromUser;
+    /** 回复目标用户信息 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private UserVO toUser;
+    /** 子评论列表 */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<CommentVO> replies;
 
     /** 父评论ID */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long parentId;
     /** 点赞数 */
     private Integer likeCount;

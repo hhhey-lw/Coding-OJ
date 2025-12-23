@@ -9,6 +9,6 @@ public interface QuestionRepository {
     /**
      * 分页查询
      */
-    Page<Question> page(String searchKey, Integer difficulty, List<String> tags, Long userId, int current, int pageSize);
+    Page<Question> page(String searchKey, Integer difficulty, List<Long> tagIds, int current, int pageSize);
 
 }

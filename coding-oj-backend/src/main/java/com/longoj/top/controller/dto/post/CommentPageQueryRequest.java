@@ -11,11 +11,6 @@ import java.io.Serializable;
 public class CommentPageQueryRequest extends PageRequest implements Serializable {
 
     /**
-     * 评论ID
-     */
-    private Long commentId;
-
-    /**
      * 文章ID
      */
     private Long postId;

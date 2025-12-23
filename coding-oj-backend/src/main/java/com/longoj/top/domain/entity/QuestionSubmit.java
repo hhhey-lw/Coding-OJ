@@ -102,4 +102,13 @@ public class QuestionSubmit implements Serializable {
                 .build();
     }
 
+    /**
+     * 构建实体
+     */
+    public static QuestionSubmit buildEntity(Long id, QuestionSubmitStatusEnum questionSubmitStatusEnum) {
+        return QuestionSubmit.builder()
+                .id(id)
+                .status(questionSubmitStatusEnum.getCode())
+                .build();
+    }
 }

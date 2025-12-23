@@ -22,6 +22,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import com.longoj.top.infrastructure.utils.JwtTokenUtil;
+import com.longoj.top.infrastructure.utils.UserContext;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +43,7 @@ import static com.longoj.top.domain.service.impl.UserServiceImpl.SALT;
  *
  */
 @Slf4j
+@Api("用户接口")
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -135,7 +138,9 @@ public class UserController {
     @ApiOperation("更新密码")
     @PostMapping("/update/pwd")
     public BaseResponse<Boolean> updateUserPwd(@RequestBody UserUpdatePwdRequest userUpdatePwdRequest) {
-        return ResultUtils.success(userService.updateUserPwd(userUpdatePwdRequest.getOldPwd(), userUpdatePwdRequest.getNewPwd()));
+        return ResultUtils.success(userService.updateUserPwd(userUpdatePwdRequest.getOldPwd(),
+                userUpdatePwdRequest.getNewPwd(),
+                userUpdatePwdRequest.getConfirmNewPwd()));
     }
 
     @ApiOperation("更新个人信息")
@@ -182,13 +187,10 @@ public class UserController {
     }
     // endregion
 
-    @PostMapping("/check-in/update")
-    public BaseResponse<Boolean> updateUserCheckInByOneDay(@RequestBody UserCheckInUpdateRequest userCheckInUpdateRequest) {
-        return ResultUtils.success(userCheckInService.updateUserCheckInByOneDay(userCheckInUpdateRequest.getUserId(), userCheckInUpdateRequest.getYearMonth(), userCheckInUpdateRequest.getDay()));
-    }
-
+    @ApiOperation("获取签到信息")
     @GetMapping("/check-in/info")
-    public BaseResponse<UserCheckInVO> getUserCheckInByUserIdAndYearMonth(Long userId, String yearMonth) {
+    public BaseResponse<UserCheckInVO> getUserCheckInByUserIdAndYearMonth(String yearMonth) {
+        Long userId = UserContext.getUser().getId();
         return ResultUtils.success(userCheckInService.getUserCheckInByUserIdAndYearMonth(userId, yearMonth));
     }
 

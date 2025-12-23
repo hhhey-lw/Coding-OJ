@@ -16,17 +16,8 @@ public class UserCheckInUpdateRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 用户 id
+     * 签到年月，格式：yyyy-MM-dd
      */
-    private Long userId;
+    private String dateTime;
 
-    /**
-     * 签到年月，格式：yyyy-MM
-     */
-    private String yearMonth;
-
-    /**
-     * 签到天数
-     */
-    private Integer day;
 }

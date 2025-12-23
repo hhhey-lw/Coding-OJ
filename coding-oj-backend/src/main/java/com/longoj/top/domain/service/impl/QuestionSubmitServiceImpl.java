@@ -100,7 +100,7 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
     public boolean isExecuted(Long id) {
         QuestionSubmit questionSubmit = baseMapper.selectById(id);
         if (questionSubmit == null) {
-            return true;
+            return false;
         }
         Integer status = questionSubmit.getStatus();
         return !(status.intValue() == QuestionSubmitStatusEnum.WAITING.getCode().intValue());
@@ -134,17 +134,16 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 
     @Override
     public Page<QuestionSubmitVO> pageQuery(QuestionSubmitQueryRequest questionSubmitQueryRequest) {
-        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(questionSubmitQueryRequest.getLanguage(), questionSubmitQueryRequest.getQuestionId(),
-                questionSubmitQueryRequest.getUserId(), QuestionSubmitStatusEnum.getByCode(questionSubmitQueryRequest.getStatus()),
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(questionSubmitQueryRequest.getLanguage().getCode(), questionSubmitQueryRequest.getQuestionId(), questionSubmitQueryRequest.getStatus(),
                 questionSubmitQueryRequest.getCurrent(), questionSubmitQueryRequest.getPageSize());
         return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));
     }
 
     @Override
-    public Page<QuestionSubmitVO> pageMy(Integer questionId, Integer status, String language, int current, int pageSize) {
+    public Page<QuestionSubmitVO> pageMy(Integer questionId, QuestionSubmitStatusEnum status, QuestionSubmitLanguageEnum language, int current, int pageSize) {
         User loginUser = UserContext.getUser();
-        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(language, questionId,
-                loginUser.getId(), QuestionSubmitStatusEnum.getByCode(status),
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(language.getCode(), questionId,
+                loginUser.getId(), status,
                 current, pageSize);
         return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));
     }
@@ -168,9 +167,11 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
         if (loginUser == null || !UserRoleEnum.ADMIN.getCode().equals(loginUser.getUserRole()) || !loginUser.getId().equals(questionSubmit.getUserId())) {
             questionSubmitVO.setCode("");
         }
-
         questionSubmitVO.setUserVO(userService.getUserVOByUserId(questionSubmit.getUserId()));
         Question question = questionService.getById(questionSubmit.getQuestionId());
+        // 隐藏题目答案和代码模版
+        question.setAnswer(null);
+        question.setSourceCode(null);
         questionSubmitVO.setQuestionVO(QuestionVO.convertToVo(question));
         return questionSubmitVO;
     }
