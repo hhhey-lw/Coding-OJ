@@ -90,7 +90,7 @@
         </span>
       </template>
       <template #createTime="{ record }">
-        {{ moment(record.createTime).format("YYYY-MM-DD") }}
+        {{ moment(record.createTime).format("YYYY-MM-DD HH:mm") }}
       </template>
     </a-table>
   </div>
@@ -176,7 +176,7 @@ const loadData = async () => {
       {
         ...searchParams.value,
         sortField: "create_time",
-        sortOrder: "descend",
+        sortOrder: "DESC",
       }
   );
   if (res) {

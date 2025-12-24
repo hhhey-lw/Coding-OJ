@@ -54,8 +54,6 @@ public class JavaDockerCodeSandBoxImpl extends AbstractJavaCodeSandBox {
 
     private final AtomicBoolean needPullImage = new AtomicBoolean(true);
 
-    /** 当前执行的容器ID（用于清理） */
-    private String currentContainerId;
 
     @Resource
     private DockerClient dockerClient;
@@ -83,28 +81,33 @@ public class JavaDockerCodeSandBoxImpl extends AbstractJavaCodeSandBox {
 
     @Override
     protected ExecutionResult doExecute(File codeFile) {
-        // 1. 创建并启动容器
-        CreateContainerResponse containerResponse = createDockerContainer();
-        currentContainerId = containerResponse.getId();
-        dockerClient.startContainerCmd(currentContainerId).exec();
-        log.info("容器启动成功: {}", currentContainerId);
+        String containerId = null;
+        try {
+            // 1. 创建并启动容器
+            CreateContainerResponse containerResponse = createDockerContainer();
+            containerId = containerResponse.getId();
+            dockerClient.startContainerCmd(containerId).exec();
+            log.info("容器启动成功: {}", containerId);
 
-        // 2. 在容器中执行代码
-        return executeInContainer(currentContainerId, codeFile);
+            // 2. 在容器中执行代码
+            return executeInContainer(containerId, codeFile);
+        } finally {
+            // 3. 确保容器被清理（无论执行成功或失败）
+            cleanupContainer(containerId);
+        }
     }
 
-    @Override
-    protected void afterExecute() {
-        // 停止并删除容器
-        if (currentContainerId != null) {
+    /**
+     * 清理容器资源
+     */
+    private void cleanupContainer(String containerId) {
+        if (containerId != null) {
             try {
-                dockerClient.stopContainerCmd(currentContainerId).exec();
-                dockerClient.removeContainerCmd(currentContainerId).exec();
-                log.info("容器已删除: {}", currentContainerId);
+                dockerClient.stopContainerCmd(containerId).exec();
+                dockerClient.removeContainerCmd(containerId).exec();
+                log.info("容器已删除: {}", containerId);
             } catch (Exception e) {
-                log.error("清理容器失败: {}", currentContainerId, e);
-            } finally {
-                currentContainerId = null;
+                log.error("清理容器失败: {}", containerId, e);
             }
         }
     }

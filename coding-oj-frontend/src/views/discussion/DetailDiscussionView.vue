@@ -24,9 +24,9 @@
           <span class="post-time">{{formatUtcDateTime(postVO?.createTime)}}</span>
         </a-space>
         <a-space>
-          <IconThumbUpFill style="font-size: large; color: #165dff; cursor: pointer;" v-if="postVO?.hasThumb" @click="thumbPost"/>
+          <IconThumbUpFill style="font-size: large; color: #165dff; cursor: pointer;" v-if="postVO?.isThumb" @click="thumbPost"/>
           <IconThumbUp style="font-size: large; cursor: pointer;" v-else @click="thumbPost"/>
-          <IconStarFill style="font-size: large; color: #ffb400; cursor: pointer;" v-if="postVO?.hasFavour" @click="favourPost"/>
+          <IconStarFill style="font-size: large; color: #ffb400; cursor: pointer;" v-if="postVO?.isFavour" @click="favourPost"/>
           <IconStar style="font-size: large; cursor: pointer;" v-else @click="favourPost"/>
 <!--          <a-link icon><icon-share-alt /> 分享</a-link>-->
         </a-space>
@@ -57,8 +57,8 @@
       <!-- 评论列表 -->
       <div v-for="item in commentList" :key="item.commentId" style="margin-top: 20px;">
         <a-comment align="right"
-                   :author="item.userVO?.userName"
-                   :avatar="item.userVO?.userAvatar"
+                   :author="item.fromUser?.userName"
+                   :avatar="item.fromUser?.userAvatar"
                    :content="item.content"
                    :datetime="formatUtcDateTime(item.createTime)"
         >
@@ -85,13 +85,14 @@
           </div>
 
           <!-- 子评论列表 -->
-          <a-comment align="right"
-                     v-for="subitem in item.replies" :key="subitem.commentId"
-                     :author="subitem.userVO?.userName"
-                     :avatar="subitem.userVO?.userAvatar"
-                     :content="`回复 @${findParentUserName(subitem.parentId, commentList)} ：${subitem.content}`"
-                     :datetime="formatUtcDateTime(subitem.createTime)"
-          >
+          <template v-if="item.replies && item.replies.length > 0">
+            <a-comment align="right"
+                       v-for="subitem in item.replies" :key="subitem.commentId"
+                       :author="subitem.fromUser?.userName"
+                       :avatar="subitem.fromUser?.userAvatar"
+                       :content="getCommentContent(subitem)"
+                       :datetime="formatUtcDateTime(subitem.createTime)"
+            >
             <a-divider/>
             <template #actions>
 <!--          <span class="action" key="heart" @click="">-->
@@ -121,7 +122,8 @@
                 发送
               </button>
             </div>
-          </a-comment>
+            </a-comment>
+          </template>
         </a-comment>
       </div>
 
@@ -150,14 +152,16 @@ import {
   PostVO,
   CommentVO, CommentAddRequest, CommentQueryRequest
 } from "@/api/discussion";
-import message from "@arco-design/web-vue/es/message";
+import { Message } from "@arco-design/web-vue";
 import MdViewer from "@/components/MdViewer.vue";
+import { h, render } from 'vue';
 import {
   IconMessage,
   IconThumbUp,
   IconThumbUpFill,
   IconStar,
-  IconStarFill
+  IconStarFill,
+  IconLoading
 } from '@arco-design/web-vue/es/icon';
 import store from "@/store";
 
@@ -194,6 +198,9 @@ const replyContents = ref<Record<number | string, string>>({});
 // 直接回复Post的评论内容
 const newComment = ref('');
 
+// 加载状态
+const isSubmitting = ref(false);
+
 // =====> 生命周期 <=====
 onMounted(() => {
   console.log('详情页加载完成');
@@ -210,7 +217,7 @@ const loadPostData = async () => {
     console.log('res.data',res);
     postVO.value = res;
   } else {
-    message.error("加载失败");
+    Message.error("加载失败");
   }
 };
 
@@ -228,31 +235,65 @@ const loadCommentData = async () => {
     pageInfo.value.totalComments = res.total
     commentList.value = res.records;
   } else {
-    message.error("加载失败");
+    Message.error("加载失败");
   }
 };
 
 // 直接回复Post的评论
 const submitComment = async () => {
   if (newComment.value == '') {
-    console.log("评论内容不能为空！");
+    Message.warning("评论内容不能为空！");
     return;
   }
-  console.log("store.state.user.loginUser.value", store.state.user.loginUser.value)
-  const commentAddReq:CommentAddRequest = {
-    content: newComment.value,
-    postId: postVO.value?.id,
-    // status: 0,
-    // userId: store.state.user.loginUser.id
+  
+  if (isSubmitting.value) {
+    return; // 防止重复提交
   }
-  const res:any = await addComment(commentAddReq);
-  console.log("评论插入Res", res)
-  if (res) {
-    alert("评论成功！");
-    newComment.value = "";
-    commentList.value.push(res)
-  }else {
-    alert("评论失败")
+  
+  isSubmitting.value = true;
+  
+  // 创建遮罩层
+  const maskDiv = document.createElement('div');
+  maskDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+  
+  // 使用 Vue 的 h 和 render 渲染 IconLoading
+  const vnode = h(IconLoading, { 
+    style: { fontSize: '48px', color: '#fff' },
+    spin: true 
+  });
+  render(vnode, maskDiv);
+  document.body.appendChild(maskDiv);
+  
+  try {
+    const commentAddReq:CommentAddRequest = {
+      content: newComment.value,
+      postId: postVO.value?.id,
+    }
+    const res:any = await addComment(commentAddReq);
+    
+    if (res) {
+      Message.success("评论成功！");
+      newComment.value = "";
+      await loadCommentData(); // 重新加载评论列表
+    } else {
+      Message.error("评论失败");
+    }
+  } catch (error) {
+    Message.error("评论失败");
+  } finally {
+    document.body.removeChild(maskDiv);
+    isSubmitting.value = false;
   }
 }
 
@@ -284,12 +325,25 @@ const formatUtcDateTime = (isoString: UnwrapRef<CommentVO["createTime"]> | undef
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
+// 获取评论内容，根据 parentId 和 rootCommentId 判断是否显示“回复 @username”
+const getCommentContent = (comment: CommentVO): string => {
+  // 如果 parentId 等于 rootCommentId，说明是直接回复一级评论（第二层级），不显示“回复 @username”
+  if (comment.parentId && comment.rootCommentId && comment.parentId === comment.rootCommentId) {
+    return comment.content || '';
+  }
+  // 否则是三级及以后的回复，显示“回复 @username”
+  if (comment.toUser && comment.toUser.userName) {
+    return `回复 @${comment.toUser.userName}：${comment.content}`;
+  }
+  return comment.content || '';
+};
+
 function findParentUserName(parentId: number | undefined, list: CommentVO[]): string | undefined {
   if (!parentId) return undefined;
 
   for (const comment of list) {
     if (comment.commentId === parentId) {
-      return comment.userVO?.userName;
+      return comment.fromUser?.userName;
     }
     // 如果有子评论，递归去找
     if (comment.replies && comment.replies.length > 0) {
@@ -308,7 +362,7 @@ const thumbPost = async () => {
   });
   console.log("res");
   if (res) {
-    postVO.value.hasThumb = !postVO.value.hasThumb
+    postVO.value.isThumb = !postVO.value.isThumb
   }else {
     alert("点赞失败！");
   }
@@ -321,7 +375,7 @@ const favourPost = async () => {
   });
   console.log("res");
   if (res) {
-    postVO.value.hasFavour = !postVO.value.hasFavour
+    postVO.value.isFavour = !postVO.value.isFavour
   }else {
     alert("收藏失败！");
   }
@@ -348,61 +402,130 @@ const toggleReplyInput = (commentId: number | string) => {
 // 提交回复 这是回复一级评论
 const submitReply = async (comment: CommentVO) => {
   const content = replyContents.value[comment.commentId!];
-  if (!content || !content.trim()) return;
-
-  console.log('提交回复:', {
-    postId: postVO.value.id,
-    content: content,
-    parentId: comment.commentId
+  if (!content || !content.trim()) {
+    Message.warning("回复内容不能为空！");
+    return;
+  }
+  
+  if (isSubmitting.value) {
+    return; // 防止重复提交
+  }
+  
+  isSubmitting.value = true;
+  
+  // 创建遮罩层
+  const maskDiv = document.createElement('div');
+  maskDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+  
+  // 使用 Vue 的 h 和 render 渲染 IconLoading
+  const vnode = h(IconLoading, { 
+    style: { fontSize: '48px', color: '#fff' },
+    spin: true 
   });
-  const commentAddReq:CommentAddRequest = {
-    content: content,
-    parentId: comment.commentId as number,
-    // rootCommentId: comment.commentId,
-    postId: postVO.value.id,
-    // status: 1,
-    // userId: store.state.user.loginUser.id
+  render(vnode, maskDiv);
+  document.body.appendChild(maskDiv);
+  
+  try {
+    const commentAddReq:CommentAddRequest = {
+      content: content,
+      parentId: comment.commentId as number,
+      postId: postVO.value.id,
+    }
+    let res:any = await addComment(commentAddReq);
+    
+    if (res) {
+      Message.success("回复成功！");
+      await loadCommentData();
+      // 清空并关闭输入框
+      replyContents.value = {
+        ...replyContents.value,
+        [comment.commentId!]: ''
+      };
+      activeReplyId.value = null;
+    } else {
+      Message.error("回复失败！");
+    }
+  } catch (error) {
+    Message.error("回复失败！");
+  } finally {
+    document.body.removeChild(maskDiv);
+    isSubmitting.value = false;
   }
-  let res:any = await addComment(commentAddReq);
-  if (res) {
-    alert("评论成功！");
-    await loadCommentData();
-  }else {
-    alert("评论失败！");
-  }
-  // 清空并关闭输入框
-  replyContents.value = {
-    ...replyContents.value,
-    [comment.commentId!]: ''
-  };
-  activeReplyId.value = null;
 };
 
 // 提交回复 这是回复二级评论
 const submitSubReply = async (rootComment: CommentVO, parentComment: CommentVO) => {
   const content = replyContents.value[parentComment.commentId!];
-  if (!content || !content.trim()) return;
-
-  console.log('提交回复:', {
-    postId: postVO.value?.id,
-    content: content,
-    parentId: parentComment.commentId,
-    rootComment: rootComment.commentId,
-  });
-  const commentAddReq:CommentAddRequest = {
-    content: content,
-    parentId: parentComment.commentId as number,
-    postId: postVO.value.id,
-    // rootCommentId: rootComment.commentId,
-    // status: 1,
-    // userId: store.state.user.loginUser.id
+  if (!content || !content.trim()) {
+    Message.warning("回复内容不能为空！");
+    return;
   }
-  let res:any = await addComment(commentAddReq);
-  if (res) {
-    alert("评论成功！");
-    await loadCommentData();
-  }else {
-    alert("评论失败！");
+  
+  if (isSubmitting.value) {
+    return; // 防止重复提交
+  }
+  
+  isSubmitting.value = true;
+  
+  // 创建遮罩层
+  const maskDiv = document.createElement('div');
+  maskDiv.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  `;
+  
+  // 使用 Vue 的 h 和 render 渲染 IconLoading
+  const vnode = h(IconLoading, { 
+    style: { fontSize: '48px', color: '#fff' },
+    spin: true 
+  });
+  render(vnode, maskDiv);
+  document.body.appendChild(maskDiv);
+  
+  try {
+    const commentAddReq:CommentAddRequest = {
+      content: content,
+      parentId: parentComment.commentId as number,
+      postId: postVO.value.id,
+    }
+    let res:any = await addComment(commentAddReq);
+    
+    if (res) {
+      Message.success("回复成功！");
+      await loadCommentData();
+      // 清空并关闭输入框
+      replyContents.value = {
+        ...replyContents.value,
+        [parentComment.commentId!]: ''
+      };
+      activeReplyId.value = null;
+    } else {
+      Message.error("回复失败！");
+    }
+  } catch (error) {
+    Message.error("回复失败！");
+  } finally {
+    document.body.removeChild(maskDiv);
+    isSubmitting.value = false;
   }
 
   // 清空并关闭输入框
@@ -485,6 +608,15 @@ const toDiscussionPage = () => {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .pointer-class {

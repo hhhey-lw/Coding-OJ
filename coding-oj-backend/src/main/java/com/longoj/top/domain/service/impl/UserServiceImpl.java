@@ -19,7 +19,9 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import com.longoj.top.infrastructure.utils.UserContext;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -35,7 +37,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      */
     public static final String SALT = "Coding-OJ";
     public static final String USER_NAME_PREFIX = "用户";
-    public static final String USER_DEFAULT_AVATAR = "http://longcoding.top:8101/api/images/avatar-%d.jpg";
+    public static final String USER_DEFAULT_AVATAR = "http://localhost:8101/api/images/avatar-%d.jpg";
     public static final String USER_DEFAULT_PROFILE = "这个人很神秘，什么都没有留下";
 
     @Resource
@@ -121,9 +123,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Boolean updateUserInfo(String userName, String userAvatar, String userProfile) {
+    public LoginUserVO updateUserInfo(String userName, String userAvatar, String userProfile) {
         User loginUser = User.buildEntity(UserContext.getUser().getId(), userName, userAvatar, userProfile);
-        return updateById(loginUser);
+        boolean update = updateById(loginUser);
+        if (!update) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户信息更新失败");
+        }
+        return User.toVO(getById(loginUser.getId()), StringUtils.EMPTY);
     }
 
     @Override

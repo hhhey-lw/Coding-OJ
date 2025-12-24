@@ -7,33 +7,40 @@ export interface PostAddRequest {
 }
 
 export interface PostQueryRequest {
-  content?: string;
+  searchKey?: string;
   current?: number;
-  favourUserId?: number;
-  id?: number;
-  notId?: number;
   pageSize?: number;
-  searchText?: string;
   sortField?: string;
   sortOrder?: string;
+}
+
+export interface PostUpdateRequest {
+  id?: number;
+  content?: string;
   tags?: string[];
   title?: string;
-  userId?: number;
+}
+
+export interface PageRequest {
+  current?: number;
+  pageSize?: number;
 }
 
 export interface PostVO {
-  content?: string;
-  createTime?: string;
-  favourNum?: number;
-  hasFavour?: boolean;
-  hasThumb?: boolean;
   id?: number;
-  tagList?: string[];
-  thumbNum?: number;
   title?: string;
-  updateTime?: string;
-  user?: any; // UserVO
+  content?: string;
+  commentNum?: number;
+  viewNum?: number;
+  thumbNum?: number;
+  favourNum?: number;
   userId?: number;
+  createTime?: string;
+  updateTime?: string;
+  tagList?: string[];
+  user?: any; // UserVO
+  isThumb?: boolean;
+  isFavour?: boolean;
 }
 
 export interface CommentAddRequest {
@@ -43,14 +50,17 @@ export interface CommentAddRequest {
 }
 
 export interface CommentVO {
-    commentId?: number | string;
+    commentId?: number;
     content?: string;
     postId?: number;
     userId?: number;
-    parentId?: number;
-    createTime?: string;
-    userVO?: any;
+    fromUser?: any; // UserVO
+    toUser?: any; // UserVO
     replies?: CommentVO[];
+    parentId?: number;
+    rootCommentId?: number;
+    likeCount?: number;
+    createTime?: string;
 }
 
 export interface CommentQueryRequest {
@@ -79,7 +89,7 @@ export function addPost(params: PostAddRequest) {
  */
 export function listPostVOByPage(params: PostQueryRequest) {
   return service({
-    url: '/post/list/page/vo',
+    url: '/post/page/vo',
     method: 'post',
     data: params,
   });
@@ -103,7 +113,7 @@ export function getPostVOById(id: number) {
  */
 export function postThumb(params: { postId: number }) {
   return service({
-    url: '/post_thumb/',
+    url: '/post/thumb/toggle',
     method: 'post',
     data: params,
   });
@@ -115,7 +125,7 @@ export function postThumb(params: { postId: number }) {
  */
 export function postFavour(params: { postId: number }) {
   return service({
-    url: '/post_favour/',
+    url: '/post/favour/toggle',
     method: 'post',
     data: params,
   });
@@ -125,9 +135,9 @@ export function postFavour(params: { postId: number }) {
  * 分页获取我收藏的帖子列表
  * @param params
  */
-export function listMyFavourPostByPage(params: PostQueryRequest) {
+export function listMyFavourPostByPage(params: PageRequest) {
   return service({
-    url: '/post_favour/my/list/page',
+    url: '/post/favour/my/page',
     method: 'post',
     data: params,
   });
@@ -138,7 +148,7 @@ export function listMyFavourPostByPage(params: PostQueryRequest) {
  */
 export function addComment(params: CommentAddRequest) {
     return service({
-        url: '/comment/add',
+        url: '/post/comment/add',
         method: 'post',
         data: params
     })
@@ -149,7 +159,51 @@ export function addComment(params: CommentAddRequest) {
  */
 export function listCommentVOByPage(params: CommentQueryRequest) {
     return service({
-        url: '/comment/list/page/vo',
+        url: '/post/comment/list/page',
+        method: 'post',
+        data: params
+    })
+}
+
+/**
+ * 删除评论
+ */
+export function deleteComment(params: { id: number }) {
+    return service({
+        url: '/post/comment/delete',
+        method: 'post',
+        data: params
+    })
+}
+
+/**
+ * 分页获取我的帖子列表
+ */
+export function listMyPostVOByPage(params: PageRequest) {
+    return service({
+        url: '/post/my/page/vo',
+        method: 'post',
+        data: params
+    })
+}
+
+/**
+ * 更新帖子
+ */
+export function updatePost(params: PostUpdateRequest) {
+    return service({
+        url: '/post/update',
+        method: 'post',
+        data: params
+    })
+}
+
+/**
+ * 删除帖子
+ */
+export function deletePost(params: { id: number }) {
+    return service({
+        url: '/post/delete',
         method: 'post',
         data: params
     })

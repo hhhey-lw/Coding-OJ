@@ -40,18 +40,22 @@ public class QuestionSubmitRepositoryImpl implements QuestionSubmitRepository {
         if (status != null) {
             queryWrapper.eq(QuestionSubmit::getStatus, status.getCode());
         }
+        queryWrapper.orderByDesc(QuestionSubmit::getCreateTime);
 
         return questionSubmitMapper.selectPage(new Page<>(current, pageSize), queryWrapper);
     }
 
     @Override
-    public Page<QuestionSubmit> page(String language, Integer questionId, QuestionSubmitStatusEnum status, int current, int pageSize) {
+    public Page<QuestionSubmit> page(String language, Integer questionId, QuestionSubmitStatusEnum status, String sortField, String sortOrder, int current, int pageSize) {
         LambdaQueryWrapper<QuestionSubmit> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(QuestionSubmit::getIsDelete, Boolean.FALSE);
         queryWrapper.eq(StringUtils.isNotBlank(language), QuestionSubmit::getLanguage, language);
         queryWrapper.eq(questionId != null, QuestionSubmit::getQuestionId, questionId);
         if (status != null) {
             queryWrapper.eq(QuestionSubmit::getStatus, status.getCode());
+        }
+        if (StringUtils.isNotBlank(sortField)) {
+            queryWrapper.last(" ORDER BY " + sortField + " " + sortOrder);
         }
 
         return questionSubmitMapper.selectPage(new Page<>(current, pageSize), queryWrapper);

@@ -53,7 +53,7 @@ public interface UserService extends IService<User> {
     /**
      * 更新用户信息
      */
-    Boolean updateUserInfo(String userName, String userAvatar, String userProfile);
+    LoginUserVO updateUserInfo(String userName, String userAvatar, String userProfile);
 
     /**
      * 根据用户 id 获取用户视图

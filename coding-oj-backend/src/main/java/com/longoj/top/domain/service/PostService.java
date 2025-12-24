@@ -30,7 +30,17 @@ public interface PostService extends IService<Post> {
     /**
      * 分页查询帖子
      */
-    Page<Post> page(String searchKey, long current, long size);
+    Page<Post> page(String searchKey, String sortField, String sortOrder, int current, int size);
+
+    /**
+     * 分页查询我的帖子
+     */
+    Page<PostVO> pageMy(int current, int size);
+
+    /**
+     * 分页获取我收藏的帖子列表
+     */
+    Page<PostVO> pageMyFavour(int current, int pageSize);
 
     /**
      * 增加评论数
@@ -76,11 +86,6 @@ public interface PostService extends IService<Post> {
      * 帖子收藏
      */
     boolean doFavour(long postId);
-
-    /**
-     * 分页获取我收藏的帖子列表
-     */
-    Page<PostVO> pageMyFavour(int current, int pageSize);
 
     /**
      * 点赞

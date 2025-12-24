@@ -134,15 +134,23 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
 
     @Override
     public Page<QuestionSubmitVO> pageQuery(QuestionSubmitQueryRequest questionSubmitQueryRequest) {
-        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(questionSubmitQueryRequest.getLanguage().getCode(), questionSubmitQueryRequest.getQuestionId(), questionSubmitQueryRequest.getStatus(),
-                questionSubmitQueryRequest.getCurrent(), questionSubmitQueryRequest.getPageSize());
+        String codeLanguage = questionSubmitQueryRequest.getLanguage() != null ? questionSubmitQueryRequest.getLanguage().getCode() : null;
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(
+                codeLanguage,
+                questionSubmitQueryRequest.getQuestionId(),
+                questionSubmitQueryRequest.getStatus(),
+                questionSubmitQueryRequest.getSortField(),
+                questionSubmitQueryRequest.getSortOrder(),
+                questionSubmitQueryRequest.getCurrent(),
+                questionSubmitQueryRequest.getPageSize());
         return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));
     }
 
     @Override
     public Page<QuestionSubmitVO> pageMy(Integer questionId, QuestionSubmitStatusEnum status, QuestionSubmitLanguageEnum language, int current, int pageSize) {
         User loginUser = UserContext.getUser();
-        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(language.getCode(), questionId,
+        String codeLanguage = language == null ? null : language.getCode();
+        Page<QuestionSubmit> questionSubmitPage = questionSubmitRepository.page(codeLanguage, questionId,
                 loginUser.getId(), status,
                 current, pageSize);
         return PageUtil.convertToVO(questionSubmitPage, questionSubmit -> getQuestionSubmitVO(questionSubmit, UserContext.getUser()));

@@ -61,17 +61,16 @@ const store = useStore();
 const handleSubmit = async () => {
   const res:any = await userLogin(form);
   console.log(res);
-  // 登录成功，跳转到主页
+  // 登录成功，保存用户信息和 token
   if (res) {
-    await store.dispatch("user/getLoginUser");
-    await store.dispatch("user/setTokenManually", res);
-    console.log(store.state.user.token)
+    await store.dispatch("user/setLoginUser", res);
+    message.success("登录成功");
     router.push({
       path: "/",
       replace: true,
     });
   } else {
-    message.error("登陆失败");
+    message.error("登录失败");
   }
 };
 

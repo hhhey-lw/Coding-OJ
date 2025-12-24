@@ -31,9 +31,12 @@ public class CommentVO {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<CommentVO> replies;
 
-    /** 父评论ID */
+    /** 父评论id */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Long parentId;
+    /** 根评论id */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Long rootCommentId;
     /** 点赞数 */
     private Integer likeCount;
     /** 创建时间 */

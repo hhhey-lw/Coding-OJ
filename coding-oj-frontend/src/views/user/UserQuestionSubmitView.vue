@@ -1,7 +1,8 @@
 <template>
   <div id="questionSubmitView">
     <a-divider size="0" />
-    <a-table :ref="tableRef" :columns="columns" :data="dataList" :pagination="{
+    <a-empty v-if="dataList.length === 0" description="暂无提交记录" style="min-height: 400px; display: flex; align-items: center; justify-content: center;" />
+    <a-table v-else :ref="tableRef" :columns="columns" :data="dataList" :pagination="{
       showTotal: true,
       pageSize: searchParams.pageSize,
       current: searchParams.current,
@@ -40,7 +41,7 @@
         </a-tag>
       </template>
       <template #createTime="{ record }">
-        {{ moment(record.createTime).format("YYYY-MM-DD") }}
+        {{ moment(record.createTime).format("YYYY-MM-DD HH:mm") }}
       </template>
     </a-table>
   </div>
@@ -103,7 +104,7 @@ const loadData = async () => {
     {
       ...searchParams.value,
       sortField: "create_time",
-      sortOrder: "descend",
+      sortOrder: "DESC",
     }
   );
   if (res) {

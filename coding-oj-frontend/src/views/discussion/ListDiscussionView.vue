@@ -5,7 +5,7 @@
       <div class="mobile-header-class">
         <a-input
             placeholder="搜索讨论..."
-            v-model="queryParams.searchText"
+            v-model="queryParams.searchKey"
             class="discussion-search"
         />
         <button class="btn-class search-class" @click="doSearchPost">搜索</button>
@@ -67,16 +67,17 @@
               style="width: 100%"
           >
             <a-space>
-              <a-avatar>
-                <img :key="item.user.userAvatar" :src="item.user.userAvatar" :size="24" />
+              <a-avatar v-if="item.user">
+                <img v-if="item.user.userAvatar" :src="item.user.userAvatar" :size="24" />
+                <icon-user v-else />
               </a-avatar>
-              <span>{{ item.user.userName }}</span>
+              <span v-if="item.user">{{ item.user.userName }}</span>
             </a-space>
             <a-space>
               <a-space>
                 <svg viewBox="0 0 24 24" width="16" height="16">
                   <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>{{ item.pageView }}
+                </svg>{{ item.viewNum || 0 }}
               </a-space>
               <a-space>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor">
@@ -113,7 +114,8 @@ import {ref, computed, onMounted} from 'vue'
 import {listPostVOByPage, PostQueryRequest, PostVO} from "@/api/discussion";
 import { useRouter } from "vue-router";
 import {
-  IconThumbUpFill
+  IconThumbUpFill,
+  IconUser
 } from '@arco-design/web-vue/es/icon';
 import * as path from "node:path";
 
@@ -126,14 +128,13 @@ const router = useRouter();
 
 const sortType = ref('latest')
 
-// sortOrder: [ascend, descend]
-let queryParams = ref<PostQueryRequest>({
+let queryParams = ref({
   current: 1,
   pageSize: 4,
   total: 0,
+  searchKey: '',
   sortField: 'create_time',
-  sortOrder: 'descend',
-  searchText: ''
+  sortOrder: 'DESC'
 })
 
 let postList = ref<PostVO[]>([]);
@@ -158,9 +159,9 @@ const loadPostData = async () => {
     const res:any = await listPostVOByPage({
       current: queryParams.value.current,
       pageSize: queryParams.value.pageSize,
+      searchKey: queryParams.value.searchKey,
       sortField: queryParams.value.sortField,
-      sortOrder: queryParams.value.sortOrder,
-      searchText: queryParams.value.searchText
+      sortOrder: queryParams.value.sortOrder
     });
     console.log(res)
     if (res && res.records) {
@@ -217,30 +218,30 @@ const handlePageChange = (page: number) => {
 const handleRadioChange = (value: string) => {
   console.log("Radio Change: ", value);
   if (value === 'hot') {
-    queryParams.value.searchText = '';
-    queryParams.value.sortField = 'page_view';
-    queryParams.value.sortOrder = 'descend';
+    queryParams.value.searchKey = '';
+    queryParams.value.sortField = 'thumb_num';
+    queryParams.value.sortOrder = 'DESC';
     queryParams.value.current = 1;
     loadPostData();
   }
   else {
-    queryParams.value.searchText = '';
+    queryParams.value.searchKey = '';
     queryParams.value.sortField = 'create_time';
-    queryParams.value.sortOrder = 'descend';
+    queryParams.value.sortOrder = 'DESC';
     queryParams.value.current = 1;
     loadPostData();
   }
 }
 
 const doSearchPost = () => {
-  console.log("doSearchPost : ", queryParams.value.searchText);
+  console.log("doSearchPost : ", queryParams.value.searchKey);
   try {
-    if (queryParams.value.searchText === '') {
+    if (queryParams.value.searchKey === '') {
       alert("查询内容不能为空！");
       return ;
     }
     queryParams.value.sortField = 'create_time';
-    queryParams.value.sortOrder = 'descend';
+    queryParams.value.sortOrder = 'DESC';
     queryParams.value.current = 1;
     loadPostData();
     } catch (e) {

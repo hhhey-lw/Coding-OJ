@@ -3,6 +3,7 @@ package com.longoj.top.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.longoj.top.controller.dto.PageRequest;
 import com.longoj.top.controller.dto.post.*;
+import com.longoj.top.controller.dto.user.UserVO;
 import com.longoj.top.domain.service.*;
 import com.longoj.top.infrastructure.aop.annotation.AuthCheck;
 import com.longoj.top.controller.dto.BaseResponse;
@@ -21,7 +22,12 @@ import com.longoj.top.infrastructure.utils.UserContext;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 帖子接口
@@ -37,6 +43,8 @@ public class PostController {
 
     @Resource
     private CommentService commentService;
+    @Autowired
+    private UserService userService;
 
     // region 增删改查
 
@@ -91,29 +99,25 @@ public class PostController {
         return ResultUtils.success(postService.getPostVO(id));
     }
 
-    // FIXME: 这个请求类的问题
-    /**
-     * 分页获取列表（仅管理员）
-     */
-    @ApiOperation("分页获取列表（仅管理员）")
-    @PostMapping("/page")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<Post>> listPostByPage(@RequestBody PostQueryRequest postQueryRequest) {
-        long current = postQueryRequest.getCurrent();
-        long size = postQueryRequest.getPageSize();
-        return ResultUtils.success(postService.page(postQueryRequest.getSearchKey(), current, size));
-    }
-
     /**
      * 分页获取列表（封装类）
      */
     @ApiOperation("分页获取列表（封装类）")
     @PostMapping("/page/vo")
     public BaseResponse<Page<PostVO>> listPostVOByPage(@RequestBody PostQueryRequest postQueryRequest) {
-        long current = postQueryRequest.getCurrent();
-        long size = postQueryRequest.getPageSize();
-        Page<Post> page = postService.page(postQueryRequest.getSearchKey(), current, size);
-        return ResultUtils.success(PageUtil.convertToVO(page, PostVO::convertToVo));
+        int current = postQueryRequest.getCurrent();
+        int size = postQueryRequest.getPageSize();
+        Page<Post> page = postService.page(postQueryRequest.getSearchKey(), postQueryRequest.getSortField(), postQueryRequest.getSortOrder(), current, size);
+        Map<Long, User> userMap = userService.listByIds(page.getRecords().stream()
+                        .map(Post::getUserId)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        return ResultUtils.success(PageUtil.convertToVO(page, post -> {
+            PostVO postVO = PostVO.convertToVo(post);
+            postVO.setUser(UserVO.toVO(userMap.get(post.getUserId())));
+            return postVO;
+        }));
     }
 
     /**
@@ -124,7 +128,7 @@ public class PostController {
     public BaseResponse<Page<PostVO>> listMyPostVOByPage(@RequestBody PageRequest pageRequest) {
         int current = pageRequest.getCurrent();
         int size = pageRequest.getPageSize();
-        return ResultUtils.success(postService.pageMyFavour(current, size));
+        return ResultUtils.success(postService.pageMy(current, size));
     }
 
     // endregion

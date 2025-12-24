@@ -22,6 +22,11 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 放行 OPTIONS 预检请求
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+        
         // 1. 获取请求头中的token
         String token = request.getHeader(JwtTokenUtil.tokenHeader);
         if (StringUtils.isBlank(token)) {

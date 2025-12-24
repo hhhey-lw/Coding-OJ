@@ -95,6 +95,10 @@
       <a-tab-pane key="userFavourPost" title="收藏帖子">
         <UserFavourView/>
       </a-tab-pane>
+
+      <a-tab-pane key="userMyPost" title="我的帖子">
+        <UserMyPostView/>
+      </a-tab-pane>
     </a-tabs>
   </div>
 </template>
@@ -118,6 +122,7 @@ import {Message} from "@arco-design/web-vue";
 import store from "@/store";
 import UserQuestionSubmitView from "@/views/user/UserQuestionSubmitView.vue";
 import UserFavourView from "@/views/user/UserFavourView.vue";
+import UserMyPostView from "@/views/user/UserMyPostView.vue";
 
 // 账号安全信息
 const securityInfo = ref({
@@ -191,16 +196,26 @@ const uploadAndUpdateUser = async () => {
 
     // 更新用户信息
     const updateRes:any = await updateMyUser({
-      ...userInfo.value,
-      userAvatar: avatarUrl
+      userName: userInfo.value.userName,
+      userAvatar: avatarUrl,
+      userProfile: userInfo.value.userProfile
     });
 
     if (updateRes) {
       Message.success('个人信息更新成功！');
+      // 保留原有 token，更新用户信息
+      const currentToken = store.state.user.loginUser.token;
+      const updatedUserInfo = {
+        ...updateRes,
+        token: currentToken
+      };
+      // 更新 store 和 localStorage
+      await store.dispatch('user/setLoginUser', updatedUserInfo);
       // 正确重置文件输入
       if (fileInput.value) fileInput.value = '';
       userInfo.value.avatarFile = null;
-      window.location.reload();
+      // 重新初始化用户信息
+      initUserInfo();
     } else {
       throw new Error('用户信息更新失败');
     }
@@ -226,8 +241,9 @@ const changePassword = async () => {
   console.log('修改密码:', securityInfo.value);
   // 这里可以添加API调用修改密码
   let res:any = await updateUserPwd({
+    oldPwd: securityInfo.value.currentPassword,
     newPwd: securityInfo.value.newPassword,
-    oldPwd: securityInfo.value.currentPassword
+    confirmNewPwd: securityInfo.value.confirmPassword
   });
 
   if (res) {
@@ -244,7 +260,14 @@ const changePassword = async () => {
 };
 
 function initUserInfo() {
-  userInfo.value = store.state.user.loginUser
+  // 深拷贝，避免和 GlobalHeader 共享数据
+  const loginUser = store.state.user.loginUser;
+  userInfo.value = {
+    userAvatar: loginUser.userAvatar || '',
+    userName: loginUser.userName || '',
+    userProfile: loginUser.userProfile || '',
+    avatarFile: null
+  };
 }
 
 // 动态调整样式

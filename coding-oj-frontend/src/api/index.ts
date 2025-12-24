@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { Message } from '@arco-design/web-vue';
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
@@ -10,11 +11,11 @@ const service: AxiosInstance = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   (config: any) => {
-    // 在发送请求之前做些什么，例如添加 token
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers['Authorization'] = token;
-    // }
+    // 在发送请求之前添加 JWT token
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
     return config;
   },
   (error: any) => {

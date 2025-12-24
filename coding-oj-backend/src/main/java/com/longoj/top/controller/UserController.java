@@ -54,11 +54,7 @@ public class UserController {
     @Resource
     private UserCheckInService userCheckInService;
 
-    // region 登录相关
-
-    /**
-     * 用户注册
-     */
+    // region 公共接口
     @ApiOperation("用户注册")
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -82,9 +78,6 @@ public class UserController {
         return ResultUtils.success(userService.userRegister(userAccount, userPassword));
     }
 
-    /**
-     * 用户登录
-     */
     @ApiOperation("用户登录")
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest) {
@@ -97,14 +90,42 @@ public class UserController {
         return ResultUtils.success(userService.userLogin(userLoginRequest.getUserAccount(), userLoginRequest.getUserPassword()));
     }
 
-    /**
-     * 用户登出
-     */
     @ApiOperation("用户登出")
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         return ResultUtils.success(userService.userLogout(request));
     }
+
+    @ApiOperation("更新密码")
+    @PostMapping("/update/pwd")
+    public BaseResponse<Boolean> updateUserPwd(@RequestBody UserUpdatePwdRequest userUpdatePwdRequest) {
+        return ResultUtils.success(userService.updateUserPwd(userUpdatePwdRequest.getOldPwd(),
+                userUpdatePwdRequest.getNewPwd(),
+                userUpdatePwdRequest.getConfirmNewPwd()));
+    }
+
+    @ApiOperation("更新个人信息")
+    @PostMapping("/update/my")
+    public BaseResponse<LoginUserVO> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest) {
+        return ResultUtils.success(userService.updateUserInfo(userUpdateMyRequest.getUserName(),
+                userUpdateMyRequest.getUserAvatar(),
+                userUpdateMyRequest.getUserProfile()));
+    }
+
+    @ApiOperation("获取用户包装类")
+    @GetMapping("/get/vo")
+    public BaseResponse<UserVO> getUserVOById(long id) {
+        BaseResponse<User> response = getUserById(id);
+        return ResultUtils.success(UserVO.toVO(response.getData()));
+    }
+
+    @ApiOperation("获取签到信息")
+    @GetMapping("/check-in/info")
+    public BaseResponse<UserCheckInVO> getUserCheckInByUserIdAndYearMonth(String yearMonth) {
+        Long userId = UserContext.getUser().getId();
+        return ResultUtils.success(userCheckInService.getUserCheckInByUserIdAndYearMonth(userId, yearMonth));
+    }
+
     // endregion
 
     // region 增删改查
@@ -135,22 +156,6 @@ public class UserController {
         return ResultUtils.success(true);
     }
 
-    @ApiOperation("更新密码")
-    @PostMapping("/update/pwd")
-    public BaseResponse<Boolean> updateUserPwd(@RequestBody UserUpdatePwdRequest userUpdatePwdRequest) {
-        return ResultUtils.success(userService.updateUserPwd(userUpdatePwdRequest.getOldPwd(),
-                userUpdatePwdRequest.getNewPwd(),
-                userUpdatePwdRequest.getConfirmNewPwd()));
-    }
-
-    @ApiOperation("更新个人信息")
-    @PostMapping("/update/my")
-    public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest) {
-        return ResultUtils.success(userService.updateUserInfo(userUpdateMyRequest.getUserName(),
-                userUpdateMyRequest.getUserAvatar(),
-                userUpdateMyRequest.getUserProfile()));
-    }
-
     /**
      * 根据 id 获取用户（仅管理员）
      */
@@ -167,16 +172,6 @@ public class UserController {
     }
 
     /**
-     * 根据 id 获取包装类
-     */
-    @ApiOperation("获取用户包装类")
-    @GetMapping("/get/vo")
-    public BaseResponse<UserVO> getUserVOById(long id) {
-        BaseResponse<User> response = getUserById(id);
-        return ResultUtils.success(UserVO.toVO(response.getData()));
-    }
-
-    /**
      * 分页获取用户列表（仅管理员）
      */
     @ApiOperation("分页获取用户")
@@ -186,12 +181,5 @@ public class UserController {
         return ResultUtils.success(userService.page(userQueryRequest.getUserName(), userQueryRequest.getUserRole(), userQueryRequest.getCurrent(), userQueryRequest.getPageSize()));
     }
     // endregion
-
-    @ApiOperation("获取签到信息")
-    @GetMapping("/check-in/info")
-    public BaseResponse<UserCheckInVO> getUserCheckInByUserIdAndYearMonth(String yearMonth) {
-        Long userId = UserContext.getUser().getId();
-        return ResultUtils.success(userCheckInService.getUserCheckInByUserIdAndYearMonth(userId, yearMonth));
-    }
 
 }

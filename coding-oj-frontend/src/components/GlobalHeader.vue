@@ -18,7 +18,7 @@
     </a-col>
     <a-col flex="100px">
       <!-- 未登录状态 -->
-      <bottom v-if="!store.state.user.loginUser.id"
+      <bottom v-if="!isLogin"
               class="login-btn-class"
               @click="gologin"><icon-user/>登录
       </bottom>
@@ -99,6 +99,13 @@ import {
 const router = useRouter();
 const store = useStore();
 
+// 判断是否登录：检查 localStorage 中是否有 token 和 store 中是否有用户信息
+const isLogin = computed(() => {
+  const token = localStorage.getItem('token');
+  const hasUserInfo = store.state.user.loginUser && store.state.user.loginUser.userName && store.state.user.loginUser.userName !== '未登录';
+  return !!token && hasUserInfo;
+});
+
 // 展示在菜单的路由数组
 const visibleRoutes = computed(() => {
   return routes.filter((item, index) => {
@@ -124,12 +131,6 @@ router.afterEach((to, from, failure) => {
 });
 
 
-setTimeout(() => {
-  store.dispatch("user/getLoginUser", {
-    userName: "Admin",
-    userRole: ACCESS_ENUM.ADMIN,
-  });
-}, 3000);
 
 const doMenuClick = (key: string) => {
   router.push({
@@ -137,9 +138,8 @@ const doMenuClick = (key: string) => {
   });
 };
 
-const logout = () => {
-  store.dispatch("user/logout");
-  store.commit("user/clearToken");
+const logout = async () => {
+  await store.dispatch("user/logout");
   router.push({
     path: "/questions",
   });

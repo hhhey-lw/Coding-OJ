@@ -39,6 +39,20 @@ export interface UserVO {
 }
 
 /**
+ * 登录用户视图对象
+ */
+export interface LoginUserVO {
+  id?: number;
+  userName?: string;
+  userAvatar?: string;
+  userProfile?: string;
+  userRole?: string;
+  createTime?: string;
+  updateTime?: string;
+  token?: string;
+}
+
+/**
  * 用户登录
  * @param params
  */
@@ -59,16 +73,6 @@ export function userRegister(params: UserRegisterRequest) {
     url: '/user/register',
     method: 'post',
     data: params,
-  });
-}
-
-/**
- * 获取当前登录用户
- */
-export function getLoginUser() {
-  return service({
-    url: '/user/get/login',
-    method: 'get',
   });
 }
 
@@ -95,8 +99,9 @@ export function updateMyUser(params: UserUpdateMyRequest) {
 }
 
 export interface UserUpdatePwdRequest {
-    newPwd?: string;
-    oldPwd?: string;
+    oldPwd: string;
+    newPwd: string;
+    confirmNewPwd: string;
 }
 
 /**
@@ -113,15 +118,13 @@ export function updateUserPwd(params: UserUpdatePwdRequest) {
 
 /**
  * 获取用户签到情况
- * @param userId
  * @param yearMonth
  */
-export function getUserCheckIn(userId: number, yearMonth: string) {
+export function getUserCheckIn(yearMonth: string) {
     return service({
-        url: '/user-check-in/info',
+        url: '/user/check-in/info',
         method: 'get',
         params: {
-            userId,
             yearMonth
         }
     })

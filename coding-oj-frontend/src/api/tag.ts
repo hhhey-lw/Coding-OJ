@@ -12,7 +12,7 @@ export interface TagVO {
  */
 export function getTagByPage(current: number, pageSize: number) {
   return service({
-    url: `/tag/queryTag/${current}/${pageSize}`,
+    url: `/question/tag/queryTag/${current}/${pageSize}`,
     method: 'get',
   });
 }
@@ -25,7 +25,7 @@ export function getTagByPage(current: number, pageSize: number) {
  */
 export function getQuestionByTagId(tagId: string, current: number, pageSize: number) {
     return service({
-        url: `/tag/id/${tagId}/${current}/${pageSize}`,
+        url: `/question/tag/id/${tagId}/${current}/${pageSize}`,
         method: 'get',
     })
 }

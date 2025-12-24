@@ -1,6 +1,6 @@
 <template>
   <!-- 空状态 -->
-  <a-empty v-if="currentPageData.length === 0" description="暂无收藏帖子" style="min-height: 400px; display: flex; align-items: center; justify-content: center;" />
+  <a-empty v-if="currentPageData.length === 0" description="暂无发布帖子" style="min-height: 400px; display: flex; align-items: center; justify-content: center;" />
   
   <!-- 帖子列表 -->
   <div v-else>
@@ -9,13 +9,26 @@
             :style="{
           borderRadius: '12px',
           boxShadow: '0 2px 2px rgba(0, 0, 0, 0.1)',
-          marginBottom: '16px'
+          marginBottom: '16px',
+          position: 'relative'
         }"
             :body-style="{
           padding: '16px'
-        }"
-            @click="toDetailDiscussion(item.id)"
-            style="cursor: pointer">
+        }">
+      <!-- 删除按钮 -->
+      <a-button 
+          type="text" 
+          status="danger" 
+          size="small"
+          @click.stop="handleDelete(item.id)"
+          style="position: absolute; top: 12px; right: 12px; z-index: 10;">
+        <template #icon>
+          <icon-delete />
+        </template>
+        删除
+      </a-button>
+      
+      <div @click="toDetailDiscussion(item.id)" style="cursor: pointer">
       <a-space direction="vertical" style="width: 100%;">
         <!-- 卡片内容保持不变... -->
         <!-- 标签 -->
@@ -71,11 +84,12 @@
           </a-space>
         </a-row>
       </a-space>
+      </div>
     </a-card>
-    </div>    <!-- 分页导航 -->
+    </div>
     <a-pagination
         :current="queryParams.current"
-        :total="queryParams.total"
+        :total="total"
         :page-size="queryParams.pageSize"
         show-total
         :style="{ marginTop: '20px', justifyContent: 'center' }"
@@ -85,10 +99,11 @@
 </template>
 
 <script setup lang="ts">
-import {IconThumbUpFill} from "@arco-design/web-vue/es/icon";
+import {IconThumbUpFill, IconDelete} from "@arco-design/web-vue/es/icon";
 import {computed, onMounted, ref} from "vue";
-import {listMyFavourPostByPage, PostQueryRequest, PostVO} from "@/api/discussion";
+import {listMyPostVOByPage, deletePost, PageRequest, PostVO} from "@/api/discussion";
 import { useRouter } from "vue-router";
+import { Modal, Message } from '@arco-design/web-vue';
 // =====> 变量定义 <=====
 const router = useRouter();
 
@@ -101,21 +116,18 @@ const tagColor = [
   "#2d8cf0"
 ]
 
-let queryParams = ref<PostQueryRequest>({
+let queryParams = ref<PageRequest>({
   current: 1,
   pageSize: 3,
-  total: 0,
-  sortField: 'createTime',
-  sortOrder: 'descend',
-  searchText: ''
 })
 
+let total = ref(0);
 
 // =====> 函数定义 <=====
 const loadPostData = async () => {
   try {
     console.log("加载数据中...")
-    const res:any = await listMyFavourPostByPage({
+    const res:any = await listMyPostVOByPage({
       current: queryParams.value.current,
       pageSize: queryParams.value.pageSize,
     });
@@ -123,7 +135,7 @@ const loadPostData = async () => {
     if (res && res.records) {
       // 过滤掉 null 值
       postList.value = res.records.filter((item: PostVO | null) => item !== null);
-      queryParams.value.total = res.total;
+      total.value = res.total;
     }
   } catch (error) {
     console.error('加载数据失败:', error);
@@ -177,6 +189,31 @@ const handlePageChange = (page: number) => {
 const toDetailDiscussion = (id:number) => {
   router.push({
     path: `/discussion/detail/${id}`
+  });
+};
+
+// 删除帖子
+const handleDelete = (id: number) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这篇帖子吗？删除后无法恢复！',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        const res: any = await deletePost({ id });
+        if (res) {
+          Message.success('删除成功！');
+          // 重新加载数据
+          await loadPostData();
+        } else {
+          Message.error('删除失败！');
+        }
+      } catch (error) {
+        console.error('删除失败:', error);
+        Message.error('删除失败！');
+      }
+    }
   });
 };
 

@@ -100,15 +100,6 @@ public class QuestionController {
     }
 
     /**
-     * 获取题目VO
-     */
-    @ApiOperation("获取题目VO")
-    @GetMapping("/get/vo")
-    public BaseResponse<QuestionVO> getQuestionVOById(@RequestParam("id") Long id) {
-        return ResultUtils.success(questionService.getQuestionVOById(id));
-    }
-
-    /**
      * 分页获取题目列表（仅管理员）
      */
     @ApiOperation("分页获取题目")
@@ -119,6 +110,7 @@ public class QuestionController {
                 questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
 
+    // ==============> 题目VO相关接口 <================
     /**
      * 分页获取题目封装列表
      */
@@ -128,6 +120,16 @@ public class QuestionController {
         return ResultUtils.success(questionService.pageVO(questionQueryRequest.getSearchKey(), questionQueryRequest.getDifficulty(), questionQueryRequest.getTags(),
                 questionQueryRequest.getCurrent(), questionQueryRequest.getPageSize()));
     }
+
+    /**
+     * 获取题目VO
+     */
+    @ApiOperation("获取题目VO")
+    @GetMapping("/get/vo")
+    public BaseResponse<QuestionVO> getQuestionVOById(@RequestParam("id") Long id) {
+        return ResultUtils.success(questionService.getQuestionVOById(id));
+    }
+
     // endregion
 
     // ================> 题目标签相关接口 <================

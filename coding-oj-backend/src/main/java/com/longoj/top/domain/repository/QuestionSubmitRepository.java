@@ -16,7 +16,7 @@ public interface QuestionSubmitRepository {
     /**
      * 分页查询提交记录
      */
-    Page<QuestionSubmit> page(String language, Integer questionId, QuestionSubmitStatusEnum status, int current, int pageSize);
+    Page<QuestionSubmit> page(String language, Integer questionId, QuestionSubmitStatusEnum status, String sortField, String sortOrder, int current, int pageSize);
 
     /**
      * 分页查询提交记录

@@ -3,12 +3,12 @@ import service from './index';
 /**
  * 上传文件
  * @param file
- * @param biz
+ * @param bizType
  */
-export function uploadFile(file: File, biz: string) {
+export function uploadFile(file: File, bizType: string) {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('biz', biz);
+  formData.append('bizType', bizType);
   return service({
     url: '/file/upload',
     method: 'post',

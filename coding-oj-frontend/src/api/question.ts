@@ -20,16 +20,11 @@ export interface QuestionEditRequest {
 }
 
 export interface QuestionQueryRequest {
-  answer?: string;
-  content?: string;
-  current?: number;
-  id?: number;
-  pageSize?: number;
-  sortField?: string;
-  sortOrder?: string;
+  searchKey?: string;
+  difficulty?: string;
   tags?: string[];
-  title?: string;
-  userId?: number;
+  current?: number;
+  pageSize?: number;
 }
 
 export interface QuestionUpdateRequest {
@@ -54,17 +49,40 @@ export interface JudgeConfig {
 }
 
 export interface QuestionVO {
-  content?: string;
-  createTime?: string;
-  favourNum?: number;
   id?: number;
-  judgeConfig?: JudgeConfig;
-  submitNum?: number;
-  tags?: string[];
-  thumbNum?: number;
   title?: string;
-  userId?: number;
+  content?: string;
+  tags?: string[];
+  difficulty?: number;
+  answer?: string;
+  sourceCode?: string;
+  submitNum?: number;
+  acceptedNum?: number;
+  judgeConfig?: JudgeConfig;
+  thumbNum?: number;
+  favourNum?: number;
   userVO?: any;
+  isPassed?: boolean;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface JudgeInfo {
+  message?: string;
+  memory?: number;
+  time?: number;
+}
+
+export interface QuestionSubmitVO {
+  id?: number;
+  language?: string;
+  code?: string;
+  judgeInfo?: JudgeInfo;
+  status?: number;
+  userVO?: any;
+  questionVO?: QuestionVO;
+  createTime?: string;
+  updateTime?: string;
 }
 
 /**
@@ -104,18 +122,6 @@ export function updateQuestion(params: QuestionUpdateRequest) {
 }
 
 /**
- * 编辑题目
- * @param params
- */
-export function editQuestion(params: QuestionEditRequest) {
-    return service({
-        url: '/question/edit',
-        method: 'post',
-        data: params,
-    });
-}
-
-/**
  * 根据 id 获取题目（管理员）
  * @param id
  */
@@ -145,7 +151,7 @@ export function getQuestionVOById(id: number) {
  */
 export function listUserQuestionSubmitByPage(params: QuestionSubmitQueryRequest) {
     return service({
-        url: '/question_submit/list/page/user',
+        url: '/question/submit/list/page/user',
         method: 'post',
         data: params
     })
@@ -201,7 +207,7 @@ export interface QuestionSubmitQueryRequest {
  */
 export function doQuestionSubmit(params: QuestionSubmitAddRequest) {
   return service({
-    url: '/question_submit/',
+    url: '/question/submit/do',
     method: 'post',
     data: params,
   });
@@ -213,7 +219,7 @@ export function doQuestionSubmit(params: QuestionSubmitAddRequest) {
  */
 export function listQuestionSubmitByPage(params: QuestionSubmitQueryRequest) {
   return service({
-    url: '/question_submit/list/page',
+    url: '/question/submit/list/page',
     method: 'post',
     data: params,
   });
@@ -237,7 +243,7 @@ export interface UserSubmitInfoVO {
  */
 export function getTopPassedQuestionUserList(limit: number) {
     return service({
-        url: `/question_submit/topPassed/${limit}`,
+        url: `/question/submit/topPassed/${limit}`,
         method: 'get',
     })
 }

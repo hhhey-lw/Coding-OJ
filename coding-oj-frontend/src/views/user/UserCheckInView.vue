@@ -165,14 +165,7 @@ const fetchData = async () => {
   const year = currentYear.value
   const month = String(currentMonth.value).padStart(2, '0')
 
-  // const res = await UserCheckInControllerService.getUserCheckInByUserIdAndYearMonthUsingGet(
-  //     store.state.user.loginUser.id,
-  //     `${year}-${month}`
-  // )
-  const res:any = await getUserCheckIn(
-      store.state.user.loginUser.id,
-      `${year}-${month}`
-  );
+  const res:any = await getUserCheckIn(`${year}-${month}`);
 
   if (res && res.bitmap != null){
     bitmap.value = res.bitmap;

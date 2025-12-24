@@ -34,6 +34,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 import com.longoj.top.infrastructure.utils.PageUtil;
+import com.longoj.top.infrastructure.utils.ResultUtils;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.infrastructure.utils.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -169,10 +170,61 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Page<Post> page(String searchKey, long current, long size) {
+    public Page<Post> page(String searchKey, String sortField, String sortOrder, int current, int size) {
         LambdaQueryWrapper<Post> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.like(Post::getTitle, searchKey);
+        if (StringUtils.isNotBlank(searchKey)) {
+            queryWrapper.like(Post::getTitle, searchKey);
+        }
+        if (StringUtils.isNotBlank(sortField)) {
+            queryWrapper.last(" order by " + sortField + " " + sortOrder);
+        }
          return page(new Page<>(current, size), queryWrapper);
+    }
+
+    @Override
+    public Page<PostVO> pageMy(int current, int size) {
+        LambdaQueryWrapper<Post> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Post::getUserId, UserContext.getUser().getId());
+        queryWrapper.eq(Post::getIsDelete, Boolean.FALSE);
+        queryWrapper.orderByDesc(Post::getCreateTime);
+        return PageUtil.convertToVO(page(new Page<>(current, size), queryWrapper), post -> {
+            PostVO postVO = PostVO.convertToVo(post);
+            postVO.setUser(UserVO.toVO(UserContext.getUser()));
+            return postVO;
+        });
+    }
+
+    @Override
+    public Page<PostVO> pageMyFavour(int current, int pageSize) {
+        Long loginUserId = UserContext.getUser().getId();
+        Page<PostFavour> postFavourPage = postFavourRepository.page(loginUserId, current, pageSize);
+        if (postFavourPage == null || CollUtil.isEmpty(postFavourPage.getRecords())) {
+            return PageUtil.emptyPage(current, pageSize);
+        }
+        // 获取帖子列表(注意帖子可能会被删除)
+        List<Post> postList = listByIds(postFavourPage.getRecords().stream()
+                .map(PostFavour::getPostId)
+                .collect(Collectors.toSet()));
+        if (CollUtil.isEmpty(postList)) {
+            return PageUtil.emptyPage(current, pageSize);
+        }
+        Map<Long, Post> postMap = postList.stream()
+                .collect(Collectors.toMap(Post::getId, Function.identity()));
+        Map<Long, User> userMap = userService.listByIds(postList.stream()
+                        .map(Post::getUserId)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        return PageUtil.convertToVO(postFavourPage, postFavour -> {
+            Post post = postMap.get(postFavour.getPostId());
+            if (post == null) {
+                return null;
+            }
+            PostVO postVO = PostVO.convertToVo(post);
+            postVO.setUser(UserVO.toVO(userMap.get(post.getUserId())));
+            return postVO;
+        });
     }
 
     /**
@@ -202,25 +254,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             decrementFavourNum(postId);
         }
         return isFavour;
-    }
-
-    @Override
-    public Page<PostVO> pageMyFavour(int current, int pageSize) {
-        Long loginUserId = UserContext.getUser().getId();
-        Page<PostFavour> postFavourPage = postFavourRepository.page(loginUserId, current, pageSize);
-        if (postFavourPage == null || CollUtil.isEmpty(postFavourPage.getRecords())) {
-            return PageUtil.emptyPage(current, pageSize);
-        }
-        List<Post> postList = listByIds(postFavourPage.getRecords().stream()
-                .map(PostFavour::getPostId)
-                .collect(Collectors.toSet()));
-
-        Map<Long, Post> postMap = postList.stream().collect(Collectors.toMap(Post::getId, Function.identity()));
-
-        return PageUtil.convertToVO(postFavourPage, postFavour -> {
-            Post post = postMap.get(postFavour.getPostId());
-            return PostVO.convertToVo(post);
-        });
     }
 
     /**
