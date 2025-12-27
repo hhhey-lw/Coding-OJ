@@ -13,6 +13,11 @@ import java.util.stream.Collectors;
 public class DefaultJudgeStrategy implements JudgeStrategy {
     @Override
     public JudgeInfo doJudge(JudgeContext judgeContext) {
+        if (judgeContext == null) {
+            return JudgeInfo.builder()
+                    .message(JudgeInfoMessageEnum.SYSTEM_ERROR.getText())
+                    .build();
+        }
         // 1. 先获取信息
         List<String> outputList = judgeContext.getOutputList();
         List<String> correctAns = judgeContext.getJudgeCaseList().stream().map(JudgeCase::getOutput).collect(Collectors.toList());
@@ -40,7 +45,7 @@ public class DefaultJudgeStrategy implements JudgeStrategy {
 
         // 2.2 题目限制
         Long runMemory = judgeInfo.getMemory();
-        if (runMemory != null && judgeConfig.getMemoryLimit() < runMemory / 1024 / 1024) {
+        if (runMemory != null && judgeConfig.getMemoryLimit() < runMemory / 1024 / 1024 / 1024) {
             judgeInfoResponse.setMessage(JudgeInfoMessageEnum.MEMORY_LIMIT_EXCEEDED.getValue());
             return judgeInfoResponse;
         }

@@ -42,10 +42,10 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
             return securityCheckResult;
         }
 
-        // 2. 编译代码
-        File codeFile = compileCode(code);
+        // 2. 保存代码文件
+        File codeFile = saveCodeFile(code);
         if (codeFile == null) {
-            return buildErrorResponse("代码编译失败！");
+            return buildErrorResponse("代码文件保存失败！");
         }
 
         try {
@@ -55,11 +55,14 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
             // 4. 执行前准备（钩子方法，子类可选实现）
             beforeExecute();
 
-            // 5. 执行代码（抽象方法，子类必须实现）
-            ExecutionResult result = doExecute(codeFile);
+            // 5. 编译代码（钩子方法，子类可覆盖实现编译策略）
+            boolean compiled = doCompile(codeFile);
+            if (!compiled) {
+                return buildErrorResponse("代码编译失败！");
+            }
 
-            // 6. 执行后处理（钩子方法，子类可选实现）
-            afterExecute();
+            // 6. 执行代码（抽象方法，子类必须实现）
+            ExecutionResult result = doExecute(codeFile);
 
             // 7. 构建响应
             return buildResponse(result);
@@ -68,8 +71,13 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
             log.error("代码执行异常", e);
             return buildErrorResponse("运行失败！");
         } finally {
-            // 8. 清理资源
-            cleanup(codeFile);
+            // 8. 执行后处理（钩子方法，子类可选实现）
+            try {
+                afterExecute();
+            } finally {
+                // 9. 清理资源
+                cleanup(codeFile);
+            }
         }
     }
 
@@ -99,6 +107,28 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
      */
     protected void beforeExecute() {
         // 默认空实现
+    }
+
+    /**
+     * 编译代码（默认在宿主机编译，Docker等实现可覆盖为跳过或自定义编译）
+     */
+    protected boolean doCompile(File codeFile) {
+        try {
+            String[] compileCmd = getCompileCommand(codeFile);
+            Process process = Runtime.getRuntime().exec(compileCmd);
+            int exitCode = process.waitFor();
+
+            if (exitCode == 0) {
+                log.info("代码编译成功");
+                return true;
+            } else {
+                log.error("代码编译失败，退出码: {}", exitCode);
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("编译过程异常", e);
+            return false;
+        }
     }
 
     /**
@@ -136,7 +166,7 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
     /**
      * 编译Java代码
      */
-    protected File compileCode(String code) {
+    protected File saveCodeFile(String code) {
         // 1. 创建代码存放目录
         String codeRootPath = getCodeRootPath();
         if (!FileUtil.exist(codeRootPath)) {
@@ -148,25 +178,7 @@ public abstract class AbstractJavaCodeSandBox implements CodeSandBox {
         FileUtil.mkdir(userCodeParentPath);
 
         String userCodePath = userCodeParentPath + File.separator + GLOBAL_JAVA_CLASS_NAME;
-        File userCodeFile = FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
-
-        // 3. 编译代码
-        try {
-            String[] compileCmd = getCompileCommand(userCodeFile);
-            Process process = Runtime.getRuntime().exec(compileCmd);
-            int exitCode = process.waitFor();
-
-            if (exitCode == 0) {
-                log.info("代码编译成功");
-                return userCodeFile;
-            } else {
-                log.error("代码编译失败，退出码: {}", exitCode);
-                return null;
-            }
-        } catch (Exception e) {
-            log.error("编译过程异常", e);
-            return null;
-        }
+        return FileUtil.writeString(code, userCodePath, StandardCharsets.UTF_8);
     }
 
     /**

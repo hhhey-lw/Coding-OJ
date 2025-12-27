@@ -23,23 +23,32 @@ public class DockerConfig {
     @Value("${docker-java.host}")
     private String DOCKER_HOST;
 
+    @Value("${docker-java.cert-path:}")
+    private String DOCKER_CERT_PATH;
 
     @Bean
     public DockerClient dockerClient() {
-        /* tls证书在/resource/certs中，使用绝对路径即可 */
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerHost(DOCKER_HOST)
-                .withDockerTlsVerify(true)
-                .withDockerCertPath("/www/wwwroot/docker-tls/")
-                .build();
+        DefaultDockerClientConfig.Builder configBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder()
+                .withDockerHost(DOCKER_HOST);
+
+        // 仅在启用TLS时配置证书
+        if (DOCKER_CERT_PATH != null && !DOCKER_CERT_PATH.isEmpty()) {
+            configBuilder.withDockerTlsVerify(true)
+                    .withDockerCertPath(DOCKER_CERT_PATH);
+        }
+        // 注释是配置私有仓库的连接信息
+        // configBuilder.withRegistryUrl();
+        // configBuilder.withRegistryUsername();
+        // configBuilder.withRegistryPassword();
+        DockerClientConfig config = configBuilder.build();
 
 
         DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
                 .dockerHost(config.getDockerHost())
                 .sslConfig(config.getSSLConfig())
                 .maxConnections(5)
-                .connectionTimeout(Duration.ofSeconds(30))
-                .responseTimeout(Duration.ofSeconds(30))
+                .connectionTimeout(Duration.ofSeconds(10))
+                .responseTimeout(Duration.ofSeconds(60))
                 .build();
 
         DockerClient dockerClient = DockerClientImpl.getInstance(config, httpClient);

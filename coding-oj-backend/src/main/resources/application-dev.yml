@@ -2,7 +2,7 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:coding_oj}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:coding-oj}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:root}
   redis:
@@ -39,10 +39,16 @@ aliyun:
 # Docker 连接配置
 docker-java:
   host: tcp://${DOCKER_HOST:localhost}:${DOCKER_PORT:2376}
-  api-version: 1.41
+  # Docker 连接TLS配置
+  cert-path: ${DOCKER_CERT_PATH}
 
 codesandbox:
-  type: native
+  # native or docker
+  type: docker
 
 cmdOS:
   type: mac
+
+logging:
+  level:
+    root: info
