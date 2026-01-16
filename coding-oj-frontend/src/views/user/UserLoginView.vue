@@ -41,6 +41,7 @@ import { reactive } from "vue";
 import { userLogin, UserLoginRequest } from "@/api/user";
 import message from "@arco-design/web-vue/es/message";
 import { useRouter } from "vue-router";
+// @ts-ignore
 import { useStore } from "vuex";
 
 /**

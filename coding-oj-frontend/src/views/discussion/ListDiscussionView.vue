@@ -16,8 +16,8 @@
     <!-- 筛选标签 -->
     <a-row justify="space-between">
       <a-space>
-        <a-tag checkable :checked="true" :checkable="false">置顶</a-tag>
-        <a-tag checkable :checkable="false">官方</a-tag>
+        <a-tag checkable :checked="true">置顶</a-tag>
+        <a-tag checkable>官方</a-tag>
       </a-space>
       <a-radio-group v-model="sortType" type="button" @change="handleRadioChange">
         <a-radio value="latest">最新</a-radio>
@@ -36,7 +36,7 @@
         :body-style="{
           padding: '16px'
         }"
-        @click="toDetailDiscussion(item.id)"
+        @click="toDetailDiscussion(item.id!)"
         style="cursor: pointer">
         <a-space direction="vertical" style="width: 100%;">
           <!-- 卡片内容保持不变... -->
@@ -62,7 +62,7 @@
           <!-- 底部信息 -->
           <a-row
               type="flex"
-              align="middle"
+              align="center"
               justify="space-between"
               style="width: 100%"
           >
@@ -90,7 +90,7 @@
                 <span class="icon-hover"> <IconThumbUpFill /> </span>
                 {{ item.thumbNum }}
               </a-space>
-              <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime) }}</span>
+              <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime ?? '') }}</span>
             </a-space>
           </a-row>
         </a-space>

@@ -12,7 +12,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.FileCopyUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 
 
@@ -27,14 +35,15 @@ public class DockerConfig {
     private String DOCKER_CERT_PATH;
 
     @Bean
-    public DockerClient dockerClient() {
+    public DockerClient dockerClient() throws IOException {
         DefaultDockerClientConfig.Builder configBuilder = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerHost(DOCKER_HOST);
 
         // 仅在启用TLS时配置证书
         if (DOCKER_CERT_PATH != null && !DOCKER_CERT_PATH.isEmpty()) {
+            String certPath = resolveCertPath(DOCKER_CERT_PATH);
             configBuilder.withDockerTlsVerify(true)
-                    .withDockerCertPath(DOCKER_CERT_PATH);
+                    .withDockerCertPath(certPath);
         }
         // 注释是配置私有仓库的连接信息
         // configBuilder.withRegistryUrl();
@@ -59,5 +68,33 @@ public class DockerConfig {
         System.out.println(infoStr);
 
         return dockerClient;
+    }
+
+    /**
+     * 解析证书路径，支持 classpath: 前缀
+     * 如果是 classpath 资源，会将证书文件复制到临时目录
+     */
+    private String resolveCertPath(String certPath) throws IOException {
+        if (certPath.startsWith("classpath:")) {
+            String resourcePath = certPath.substring("classpath:".length());
+            // 创建临时目录存放证书
+            Path tempDir = Files.createTempDirectory("docker-certs");
+            tempDir.toFile().deleteOnExit();
+
+            // 复制证书文件到临时目录
+            String[] certFiles = {"ca.pem", "cert.pem", "key.pem"};
+            for (String certFile : certFiles) {
+                Resource resource = new ClassPathResource(resourcePath + "/" + certFile);
+                if (resource.exists()) {
+                    try (InputStream is = resource.getInputStream()) {
+                        File targetFile = new File(tempDir.toFile(), certFile);
+                        FileCopyUtils.copy(is, Files.newOutputStream(targetFile.toPath()));
+                        targetFile.deleteOnExit();
+                    }
+                }
+            }
+            return tempDir.toString();
+        }
+        return certPath;
     }
 }

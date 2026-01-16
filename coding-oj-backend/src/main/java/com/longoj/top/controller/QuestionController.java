@@ -15,6 +15,9 @@ import com.longoj.top.domain.entity.constant.UserConstant;
 import com.longoj.top.infrastructure.exception.BusinessException;
 import com.longoj.top.infrastructure.utils.ThrowUtils;
 import com.longoj.top.domain.entity.Question;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +53,27 @@ public class QuestionController {
 
     @Resource
     private UserCheckInService userCheckInService;
+
+    // Prometheus 指标
+    private final Counter submitCounter;      // 提交次数计数器
+    private final Counter submitSuccessCounter; // 提交成功计数器
+    private final Counter submitFailCounter;    // 提交失败计数器
+    private final Timer submitTimer;          // 提交耗时计时器
+
+    public QuestionController(MeterRegistry registry) {
+        this.submitCounter = Counter.builder("oj.submit.total")
+                .description("代码提交总次数")
+                .register(registry);
+        this.submitSuccessCounter = Counter.builder("oj.submit.success")
+                .description("代码提交成功次数")
+                .register(registry);
+        this.submitFailCounter = Counter.builder("oj.submit.fail")
+                .description("代码提交失败次数")
+                .register(registry);
+        this.submitTimer = Timer.builder("oj.submit.duration")
+                .description("代码提交处理耗时")
+                .register(registry);
+    }
 
     // region 增删改查
 
@@ -162,15 +186,28 @@ public class QuestionController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
-        // 提交代码进行判题
-        Long questionSubmitId = questionSubmitService.submit(questionSubmitAddRequest);
+        // 记录提交次数
+        submitCounter.increment();
 
-        // 更新用户当天签到和每日提交统计
-        userCheckInService.updateUserCheckInByOneDay();
-        // 更新题目提交数
-        questionService.updateQuestionSubmitNum(questionSubmitAddRequest.getQuestionId());
+        return submitTimer.record(() -> {
+            try {
+                // 提交代码进行判题
+                Long questionSubmitId = questionSubmitService.submit(questionSubmitAddRequest);
 
-        return ResultUtils.success(questionSubmitId);
+                // 更新用户当天签到和每日提交统计
+                userCheckInService.updateUserCheckInByOneDay();
+                // 更新题目提交数
+                questionService.updateQuestionSubmitNum(questionSubmitAddRequest.getQuestionId());
+
+                // 记录成功次数
+                submitSuccessCounter.increment();
+                return ResultUtils.success(questionSubmitId);
+            } catch (Exception e) {
+                // 记录失败次数
+                submitFailCounter.increment();
+                throw e;
+            }
+        });
     }
 
 

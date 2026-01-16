@@ -10,10 +10,10 @@
                 :column="{ xs: 1, md: 2, lg: 3 }"
               >
                 <a-descriptions-item label="时间限制">
-                  {{ question.judgeConfig.timeLimit ?? 0 }}ms
+                  {{ question.judgeConfig?.timeLimit ?? 0 }}ms
                 </a-descriptions-item>
                 <a-descriptions-item label="内存限制">
-                  {{ question.judgeConfig.memoryLimit ?? 0 }}MB
+                  {{ question.judgeConfig?.memoryLimit ?? 0 }}MB
                 </a-descriptions-item>
 <!--                <a-descriptions-item label="堆栈限制">-->
 <!--                  {{ question.judgeConfig.stackLimit ?? 0 }}-->
@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watchEffect, withDefaults, defineProps } from "vue";
+import { onMounted, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import message from "@arco-design/web-vue/es/message";
 import CodeEditor from "@/components/CodeEditor.vue";

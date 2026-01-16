@@ -58,3 +58,19 @@ jwt:
   secret: ${JWT_SECRET:Coding-OJ}
   expiration: ${JWT_EXPIRATION:604800}
   token-header: "Authorization"
+
+# Prometheus 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics  # 暴露的端点
+      base-path: /actuator  # Actuator 端点基础路径
+  endpoint:
+    health:
+      show-details: always  # 显示健康检查详情
+    prometheus:
+      enabled: true  # 启用 Prometheus 端点
+  metrics:
+    tags:
+      application: ${spring.application.name}  # 给所有指标添加应用名标签

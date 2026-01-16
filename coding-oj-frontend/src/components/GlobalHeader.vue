@@ -81,6 +81,7 @@
 import { routes } from "../router/routes";
 import { useRouter } from "vue-router";
 import { computed, ref } from "vue";
+// @ts-ignore
 import { useStore } from "vuex";
 import checkAccess from "@/access/checkAccess";
 import ACCESS_ENUM from "@/access/accessEnum";

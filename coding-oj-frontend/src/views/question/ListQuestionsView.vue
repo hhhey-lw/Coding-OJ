@@ -53,7 +53,7 @@
                   class="search-form-item"
               >
                 <a-input
-                    v-model="searchParams.title"
+                    v-model="searchParams.searchKey"
                     class="len-input-class"
                     placeholder="搜索题目标题"
                 />
@@ -202,7 +202,7 @@ const tableRef = ref(); // 表格引用
 const dataList = ref<QuestionVO[]>([]); // 题目列表数据
 const total = ref(0); // 题目总数
 const searchParams = ref<QuestionQueryRequest>({ // 搜索参数
-  title: "",
+  searchKey: "",
   tags: [],
   pageSize: 10,
   current: 1,

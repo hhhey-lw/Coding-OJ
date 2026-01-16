@@ -25,7 +25,6 @@ import "highlight.js/styles/default.css";
 // import copyCode from "bytemd-plugin-copy-code";
 // import "bytemd-plugin-copy-code/dist/style/index.css";
 // import 'juejin-markdown-themes/dist/juejin.min.css'
-import { withDefaults, defineProps } from "vue";
 
 interface Props {
   value: string;

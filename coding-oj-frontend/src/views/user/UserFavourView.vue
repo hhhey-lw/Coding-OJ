@@ -14,7 +14,7 @@
             :body-style="{
           padding: '16px'
         }"
-            @click="toDetailDiscussion(item.id)"
+            @click="toDetailDiscussion(item.id!)"
             style="cursor: pointer">
       <a-space direction="vertical" style="width: 100%;">
         <!-- 卡片内容保持不变... -->
@@ -37,7 +37,7 @@
         <!-- 底部信息 -->
         <a-row
             type="flex"
-            align="middle"
+            align="center"
             justify="space-between"
             style="width: 100%"
         >
@@ -67,7 +67,7 @@
               <span class="icon-hover"> <IconThumbUpFill /> </span>
               {{ item.thumbNum || 0 }}
             </a-space>
-            <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime) }}</span>
+            <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime ?? '') }}</span>
           </a-space>
         </a-row>
       </a-space>
@@ -75,7 +75,7 @@
     </div>    <!-- 分页导航 -->
     <a-pagination
         :current="queryParams.current"
-        :total="queryParams.total"
+        :total="total"
         :page-size="queryParams.pageSize"
         show-total
         :style="{ marginTop: '20px', justifyContent: 'center' }"
@@ -104,11 +104,11 @@ const tagColor = [
 let queryParams = ref<PostQueryRequest>({
   current: 1,
   pageSize: 3,
-  total: 0,
   sortField: 'createTime',
   sortOrder: 'descend',
-  searchText: ''
 })
+
+let total = ref(0);
 
 
 // =====> 函数定义 <=====
@@ -123,7 +123,7 @@ const loadPostData = async () => {
     if (res && res.records) {
       // 过滤掉 null 值
       postList.value = res.records.filter((item: PostVO | null) => item !== null);
-      queryParams.value.total = res.total;
+      total.value = res.total;
     }
   } catch (error) {
     console.error('加载数据失败:', error);

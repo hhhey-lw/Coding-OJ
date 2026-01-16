@@ -3,7 +3,7 @@ import { Message } from '@arco-design/web-vue';
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:8101/api', 
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api', 
   timeout: 10000, // 请求超时时间
   withCredentials: true, // 跨域请求时是否发送 cookie
 });

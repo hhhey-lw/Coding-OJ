@@ -20,7 +20,7 @@
           type="text" 
           status="danger" 
           size="small"
-          @click.stop="handleDelete(item.id)"
+          @click.stop="handleDelete(item.id!)"
           style="position: absolute; top: 12px; right: 12px; z-index: 10;">
         <template #icon>
           <icon-delete />
@@ -28,7 +28,7 @@
         删除
       </a-button>
       
-      <div @click="toDetailDiscussion(item.id)" style="cursor: pointer">
+      <div @click="toDetailDiscussion(item.id!)" style="cursor: pointer">
       <a-space direction="vertical" style="width: 100%;">
         <!-- 卡片内容保持不变... -->
         <!-- 标签 -->
@@ -50,7 +50,7 @@
         <!-- 底部信息 -->
         <a-row
             type="flex"
-            align="middle"
+            align="center"
             justify="space-between"
             style="width: 100%"
         >
@@ -80,7 +80,7 @@
               <span class="icon-hover"> <IconThumbUpFill /> </span>
               {{ item.thumbNum || 0 }}
             </a-space>
-            <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime) }}</span>
+            <span>&nbsp&nbsp{{ formatUtcDateTime(item.createTime ?? '') }}</span>
           </a-space>
         </a-row>
       </a-space>

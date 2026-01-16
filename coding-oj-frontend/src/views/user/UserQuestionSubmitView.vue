@@ -127,7 +127,7 @@ const onPageChange = (page: number) => {
  * 跳转到做题页面
  * @param question
  */
-const toQuestionPage = (e) => {
+const toQuestionPage = (e: any) => {
   router.push({
     path: `/view/question/${e.questionVO.id}`,
   });
@@ -164,14 +164,14 @@ const getStatusColor = (status: number) => {
   }
 };
 
-function formatMemory(bytes) {
+function formatMemory(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
   return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-function formatTime(ms) {
+function formatTime(ms: number | string) {
   // 如果是字符串，先转为数字（支持 "123"、"123.456" 等格式）
   if (typeof ms === 'string') {
     ms = parseFloat(ms);
@@ -188,7 +188,7 @@ function formatTime(ms) {
 
 // 根据 message 内容获取标签颜色
 const getMessageColor = (message: string) => {
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     '答案错误': 'red',
     '成功': 'green',
     '答案正确': 'green',

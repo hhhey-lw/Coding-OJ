@@ -139,11 +139,11 @@ let userInfo = ref({
   avatarFile: null as File | null
 });
 
-const fileInput = ref(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 const loading = ref(false);
 
 const triggerUpload = () => {
-  fileInput.value.click(); // 使用可选链操作符
+  fileInput.value?.click(); // 使用可选链操作符
 };
 
 // 处理头像变更
@@ -212,16 +212,16 @@ const uploadAndUpdateUser = async () => {
       // 更新 store 和 localStorage
       await store.dispatch('user/setLoginUser', updatedUserInfo);
       // 正确重置文件输入
-      if (fileInput.value) fileInput.value = '';
+      if (fileInput.value) fileInput.value.value = '';
       userInfo.value.avatarFile = null;
       // 重新初始化用户信息
       initUserInfo();
     } else {
       throw new Error('用户信息更新失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('操作失败:', error);
-    Message.error(`操作失败: ${error.message}`);
+    Message.error(`操作失败: ${error?.message ?? '未知错误'}`);
   } finally {
     loading.value = false;
   }

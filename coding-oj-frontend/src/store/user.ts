@@ -1,7 +1,17 @@
 // initial state
-import { StoreOptions } from "vuex";
+// @ts-ignore
+import { StoreOptions, Commit } from "vuex";
 import ACCESS_ENUM from "@/access/accessEnum";
 import { userLogout } from "@/api/user";
+
+interface UserState {
+  loginUser: {
+    userName: string;
+    userRole?: string;
+    token?: string;
+    [key: string]: any;
+  };
+}
 
 export default {
   namespaced: true,
@@ -12,7 +22,7 @@ export default {
   }),
   actions: {
     // 获取登录用户信息（从 localStorage 检查登录状态）
-    async getLoginUser({ commit, state }) {
+    async getLoginUser({ commit, state }: { commit: Commit; state: UserState }) {
       // 检查是否已经有用户信息
       if (state.loginUser.userName !== "未登录") {
         return;
@@ -52,7 +62,7 @@ export default {
     },
     
     // 登录后保存用户信息和 token
-    async setLoginUser({ commit }, loginUserVO: any) {
+    async setLoginUser({ commit }: { commit: Commit }, loginUserVO: any) {
       if (loginUserVO.token) {
         // 保存 token 到 localStorage
         localStorage.setItem('token', loginUserVO.token);
@@ -66,7 +76,7 @@ export default {
     },
     
     // 退出登录
-    async logout({ commit }) {
+    async logout({ commit }: { commit: Commit }) {
       const res = await userLogout();
       if (res !== undefined) {
         // 清除 token 和用户信息
@@ -81,7 +91,7 @@ export default {
     },
   },
   mutations: {
-    updateUser(state, payload) {
+    updateUser(state: UserState, payload: UserState['loginUser']) {
       state.loginUser = payload;
     },
   },

@@ -31,7 +31,6 @@ import "highlight.js/styles/default.css";
 // import "bytemd-plugin-copy-code/dist/style/index.css";
 // import 'juejin-markdown-themes/dist/juejin.min.css'
 import { Editor } from "@bytemd/vue-next";
-import { withDefaults, defineProps } from "vue";
 
 /**
  * 定义组件属性类型

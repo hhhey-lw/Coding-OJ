@@ -42,7 +42,7 @@
         <!-- 通过率插槽 -->
         <template #passRate="{ record }">
           <div class="stats">
-            <span class="stat-value" :style="{ color: getPassRateColor(fixedNumber(record.passedQuestionNumber / record.totalSubmitNumber)) }">
+            <span class="stat-value" :style="{ color: getPassRateColor(parseFloat(fixedNumber(record.passedQuestionNumber / record.totalSubmitNumber))) }">
               {{ fixedNumber(record.passedQuestionNumber / record.totalSubmitNumber)}}%
             </span>
           </div>
@@ -271,7 +271,7 @@ function formatTime(ms:any) {
 
 // 根据 message 内容获取标签颜色
 const getMessageColor = (message: string) => {
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     '答案错误': '#ed3f14',
     '成功': '#19be6b',
     '答案正确': '#19be6b',
@@ -329,7 +329,7 @@ const rankColumns = [
 ];
 
 // 通过率颜色计算
-const getPassRateColor = (percent:Number) => {
+const getPassRateColor = (percent: number) => {
   return percent > 50 ? '#4CAF50' : '#FF5252';
 };
 

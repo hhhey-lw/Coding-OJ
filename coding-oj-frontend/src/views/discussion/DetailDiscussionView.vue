@@ -40,7 +40,7 @@
 
       <!-- 正文 Markdown -->
       <div style="margin-top: 20px">
-        <MdViewer :value="postVO?.content"/>
+        <MdViewer :value="postVO?.content ?? ''"/>
       </div>
     </a-card>
 
@@ -64,7 +64,7 @@
         >
           <a-divider/>
           <template #actions>
-            <span class="action" style="cursor: pointer" key="reply" @click="toggleReplyInput(item.commentId)">
+            <span class="action" style="cursor: pointer" key="reply" @click="toggleReplyInput(item.commentId!)">
           <IconMessage /> {{activeReplyId === item.commentId ? '取消回复' :'回复'}}
         </span>
           </template>
@@ -104,7 +104,7 @@
 <!--            </span>-->
 <!--            {{ 83 }}-->
 <!--          </span>-->
-              <span class="action" key="reply" @click="toggleReplyInput(subitem.commentId)">
+              <span class="action" key="reply" @click="toggleReplyInput(subitem.commentId!)">
             <IconMessage /> {{activeReplyId === subitem.commentId ? '取消回复' : '回复'}}
           </span>
             </template>
@@ -357,6 +357,7 @@ function findParentUserName(parentId: number | undefined, list: CommentVO[]): st
 
 const thumbPost = async () => {
   console.log("点赞！");
+  if (!postVO.value?.id) return;
   let res:any = await postThumb({
     postId: postVO.value.id
   });
@@ -370,6 +371,7 @@ const thumbPost = async () => {
 
 const favourPost = async () => {
   console.log("收藏！");
+  if (!postVO.value?.id) return;
   let res:any = await postFavour({
     postId: postVO.value.id
   });
@@ -440,7 +442,7 @@ const submitReply = async (comment: CommentVO) => {
     const commentAddReq:CommentAddRequest = {
       content: content,
       parentId: comment.commentId as number,
-      postId: postVO.value.id,
+      postId: postVO.value?.id,
     }
     let res:any = await addComment(commentAddReq);
     
@@ -505,7 +507,7 @@ const submitSubReply = async (rootComment: CommentVO, parentComment: CommentVO) 
     const commentAddReq:CommentAddRequest = {
       content: content,
       parentId: parentComment.commentId as number,
-      postId: postVO.value.id,
+      postId: postVO.value?.id,
     }
     let res:any = await addComment(commentAddReq);
     

@@ -9,7 +9,7 @@
         <a-input-tag v-model="form.tags" placeholder="请选择标签" allow-clear />
       </a-form-item>
       <a-form-item field="content" label="内容" style="z-index: 999;">
-        <MdEditor :value="form.content" :handle-change="onContentChange" class="editor-box"/>
+        <MdEditor :value="form.content ?? ''" :handle-change="onContentChange" class="editor-box"/>
       </a-form-item>
       <div style="margin-top: 16px" />
       <a-form-item>
