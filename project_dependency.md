@@ -12,7 +12,8 @@ docker run -d --name coding-oj-mq \
 
 ### Docker Cli 
 > 运行以下脚本生成 TLS 证书，用于 Docker 客户端和服务器之间的安全通信。
-> 将ca-docker, cert-docker, key-docker三个文件放到Boot项目的resource/tls-client-certs-docker目录下即可，注意重命名，去掉每个文件的 '-docker' 。
+> 将(tls-client-certs-docker下的)ca-docker, cert-docker,
+> key-docker三个文件放到Boot项目的resource/tls-client-certs-docker目录下即可，注意重命名，去掉每个文件的 '-docker' 。
 ```shell
 #!/bin/bash
 #
@@ -59,3 +60,12 @@ chmod -v 0444 "ca-$CODE.pem" "server-cert-$CODE.pem" "cert-$CODE.pem"
 mkdir -p "tls-client-certs-$CODE"
 cp -f "ca-$CODE.pem" "cert-$CODE.pem" "key-$CODE.pem" "tls-client-certs-$CODE/"
 ```
+
+```bash
+vim /lib/systemd/system/docker.service
+
+ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2376 --tlsverify --tlscacert=/root/app/docker_connect_certs/ca-docker.pem --tlscert=/root/app/docker_connect_certs/server-cert-docker.pem --tlskey=/root/app/docker_connect_certs/server-key-docker.pem
+```
+
+记得重启docker
+sudo systemctl restart docker
