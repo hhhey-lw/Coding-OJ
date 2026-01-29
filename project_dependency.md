@@ -70,5 +70,5 @@ ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock -H unix:
 记得重启docker
 sudo systemctl restart docker
 
-application.yaml:
-tls位置：classpath:tls-client-certs-docker/
+application.yaml:(最后不要带/)
+tls位置：classpath:tls-client-certs-docker
